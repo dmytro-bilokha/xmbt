@@ -13,11 +13,14 @@
         <application.bootstrapClass>com.dmytrobilokha.xmbt.boot.Loader</application.bootstrapClass>
 
         <logback.version>1.2.3</logback.version>
+        <yasson.version>1.0.5</yasson.version>
+        <javax.json.version>1.1.4</javax.json.version>
         <mybatis.version>3.5.2</mybatis.version>
         <flyway.version>6.0.1</flyway.version>
         <testng.version>7.0.0</testng.version>
         <mockito.version>3.0.0</mockito.version>
         <h2.version>1.4.199</h2.version>
+        <jsr305.version>3.0.2</jsr305.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M3</maven.surefire.plugin.version>
@@ -38,6 +41,16 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse</groupId>
+            <artifactId>yasson</artifactId>
+            <version>${yasson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <version>${javax.json.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mybatis</groupId>
@@ -66,6 +79,11 @@
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>${jsr305.version}</version>
         </dependency>
     </dependencies>
 

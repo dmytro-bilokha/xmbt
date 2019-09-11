@@ -8,8 +8,6 @@
         This ruleset defines the rules for my project
     </description>
 
-    <!-- No abstract classes without abstract methods -->
-    <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod" />
     <!-- There are no reasons to print a stack trace from the web application -->
     <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
     <!-- No reassigning of the parameters -->
@@ -248,9 +246,8 @@
     <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals" />
     <!-- Don't call overridable methods in constructor -->
     <rule ref="category/java/errorprone.xml/ConstructorCallsOverridableMethod" />
-    <!-- No need to call gc or exit JVM in a web application -->
+    <!-- No need to call gc -->
     <rule ref="category/java/errorprone.xml/DoNotCallGarbageCollectionExplicitly" />
-    <rule ref="category/java/errorprone.xml/DoNotCallSystemExit" />
     <!-- Don't extend Throwable -->
     <rule ref="category/java/errorprone.xml/DoNotExtendJavaLangThrowable" />
     <!-- Don't throw exception in finally -->
