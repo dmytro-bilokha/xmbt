@@ -77,8 +77,13 @@ public class ConfigService {
         configMap.put(configProperty.getClass(), configProperty);
     }
 
-    public <T extends ConfigProperty> T getProperty(Class<T> propertyClass) {
-        return propertyClass.cast(configMap.get(propertyClass));
+    @Nonnull
+    public <T extends ConfigProperty> T getProperty(@Nonnull Class<T> propertyClass) {
+        T property = propertyClass.cast(configMap.get(propertyClass));
+        if (property == null) {
+            throw new IllegalStateException("Requested property '" + propertyClass + "' not found");
+        }
+        return property;
     }
 
 }
