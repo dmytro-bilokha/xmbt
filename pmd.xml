@@ -39,8 +39,6 @@
     <rule ref="category/java/bestpractices.xml/PreserveStackTrace" />
     <!-- All switch should contain default -->
     <rule ref="category/java/bestpractices.xml/SwitchStmtsShouldHaveDefault" />
-    <!-- No reasons to use System.out/err.print in the web application -->
-    <rule ref="category/java/bestpractices.xml/SystemPrintln" />
     <!-- No unused parameters -->
     <rule ref="category/java/bestpractices.xml/UnusedFormalParameter" />
     <!-- No unused local variables -->
@@ -344,8 +342,6 @@
     <rule ref="category/java/errorprone.xml/UselessOperationOnImmutable" />
     <!-- Use synchronize blocks inside methods, not methods itself -->
     <rule ref="category/java/multithreading.xml/AvoidSynchronizedAtMethodLevel" />
-    <!-- Don't use Threads in web application -->
-    <rule ref="category/java/multithreading.xml/DoNotUseThreads" />
     <!-- Use Thread.start(), not Thread.run() -->
     <rule ref="category/java/multithreading.xml/DontCallThreadRun" />
     <!-- Don't do "" + 123, do Integer.toString(123) -->

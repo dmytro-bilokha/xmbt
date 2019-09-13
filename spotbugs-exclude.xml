@@ -1,25 +1,7 @@
 <FindBugsFilter>
     <Match>
-        <!-- Never written object field rule doesn't match with reflection used during deserialization -->
-        <Bug pattern="UWF_UNWRITTEN_FIELD" />
-    </Match>
-    <Match>
-        <!-- Sometimes we implement compareTo() without overriding equals() -->
-        <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS" />
-    </Match>
-    <Match>
-        <!-- Logically NPE should not happen here -->
-        <Class name="com.dmytrobilokha.nibee.service.file.FileService" />
-        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
-    </Match>
-    <Match>
-        <!-- I don't expect servlet to be serialized and anyway all fields are injected by CDI -->
-        <Class name="~com\.dmytrobilokha\.nibee\.web.*Servlet" />
-        <Bug pattern="SE_BAD_FIELD" />
-    </Match>
-    <Match>
-        <!-- For DTO it is ok to expose internal state by returning array -->
-        <Class name="~com\.dmytrobilokha\.nibee\.web.*Dto" />
-        <Bug pattern="EI_EXPOSE_REP2" />
+        <!-- System.exit in this application is OK -->
+        <Class name="com.dmytrobilokha.xmbt.boot.Loader" />
+        <Bug pattern="DM_EXIT" />
     </Match>
 </FindBugsFilter>
