@@ -9,6 +9,7 @@ import com.dmytrobilokha.xmbt.config.property.NsApiKeyProperty;
 import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
+import com.dmytrobilokha.xmbt.manager.MessageTimer;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public final class Loader {
         configService = new ConfigService(
                 fsService, SYSTEM_PROPERTY_PRODUCERS, propertyProducers);
         xmppConnector = new XmppConnector(configService);
-        botManager = new BotManager(xmppConnector, cleaner);
+        botManager = new BotManager(xmppConnector, cleaner, new MessageTimer());
     }
 
     public static void main(@Nonnull String[] cliArgs) {

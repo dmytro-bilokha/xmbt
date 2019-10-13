@@ -8,12 +8,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
+//TODO: add '@botname says:' line on top of each message from bot
+//TODO: add scheduling confirmation message, improve scheduling
 public class BotManager {
 
     private static final char BOT_NAME_PREFIX = '@';
@@ -24,15 +29,18 @@ public class BotManager {
     @Nonnull
     private final Cleaner cleaner;
     @Nonnull
+    private final MessageTimer messageTimer;
+    @Nonnull
     private final BlockingQueue<TextMessage> toUserMessageQueue = new LinkedBlockingQueue<>();
     @Nonnull
     private final BlockingQueue<TextMessage> fromUserMessageQueue = new LinkedBlockingQueue<>();
     @Nonnull
     private final ConcurrentMap<String, BlockingQueue<TextMessage>> userToBotQueuesMap = new ConcurrentHashMap<>();
 
-    public BotManager(@Nonnull XmppConnector connector, @Nonnull Cleaner cleaner) {
+    public BotManager(@Nonnull XmppConnector connector, @Nonnull Cleaner cleaner, @Nonnull MessageTimer messageTimer) {
         this.connector = connector;
         this.cleaner = cleaner;
+        this.messageTimer = messageTimer;
     }
 
     public void start() {
@@ -46,6 +54,8 @@ public class BotManager {
             while (!Thread.currentThread().isInterrupted()) {
                 processOutgoingQueue();
                 processIncomingQueue();
+                var scheduledMessages = messageTimer.tick(1000L);
+                putScheduledMessagesInQueue(scheduledMessages);
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -77,12 +87,12 @@ public class BotManager {
 
     private void startBots(@Nonnull Bot... bots) {
         for (Bot bot : bots) {
-            String botName = BOT_NAME_PREFIX + bot.getName();
-            BlockingQueue<TextMessage> botsQueue = new LinkedBlockingQueue<>();
+            var botName = BOT_NAME_PREFIX + bot.getName();
+            var botsQueue = new LinkedBlockingQueue<TextMessage>();
             userToBotQueuesMap.put(botName, botsQueue);
-            DuplexMessageQueueClient messageQueueClient = new DuplexMessageQueueClient(botsQueue, toUserMessageQueue);
+            var messageQueueClient = new DuplexMessageQueueClient(botsQueue, toUserMessageQueue);
             bot.setMessageQueueClient(messageQueueClient);
-            Thread botThread = new Thread(bot);
+            var botThread = new Thread(bot);
             botThread.setName(botName);
             cleaner.registerThread(botThread);
             botThread.start();
@@ -105,6 +115,7 @@ public class BotManager {
     }
 
     private void processIncomingQueue() throws InterruptedException {
+        //TODO: rename
         TextMessage messageForBot = fromUserMessageQueue.poll();
         if (messageForBot != null) {
             dispatchMessage(messageForBot);
@@ -112,7 +123,7 @@ public class BotManager {
     }
 
     private void dispatchMessage(@Nonnull TextMessage incomingMessage) throws InterruptedException {
-        String messageText = incomingMessage.getText().trim();
+        var messageText = incomingMessage.getText().trim();
         if (messageText.isEmpty()) {
             LOG.debug("Got message {} with empty payload, will ignore it", incomingMessage);
             return;
@@ -125,7 +136,7 @@ public class BotManager {
     }
 
     private void passMessageToBot(@Nonnull TextMessage message) throws InterruptedException {
-        String messageText = message.getText().trim();
+        var messageText = message.getText().trim();
         int spaceIndex = messageText.indexOf(' ');
         String botName;
         String restOfMessage;
@@ -137,7 +148,7 @@ public class BotManager {
             botName = messageText.substring(0, spaceIndex);
             restOfMessage = messageText.substring(spaceIndex);
         }
-        BlockingQueue<TextMessage> botIncomingMessageQueue = userToBotQueuesMap.get(botName);
+        var botIncomingMessageQueue = userToBotQueuesMap.get(botName);
         if (botIncomingMessageQueue == null) {
             toUserMessageQueue.put(new TextMessage(message.getAddress()
                     , "Don't have any bot with name '" + botName + "'"));
@@ -146,17 +157,33 @@ public class BotManager {
         botIncomingMessageQueue.put(new TextMessage(message.getAddress(), restOfMessage));
     }
 
-    private void executeCommandFromMessage(TextMessage message) throws InterruptedException {
-        String[] messageWords = message.getText().split(" +");
-        String command = messageWords[0];
-        String responseText;
-        if ("list".equals(command)) {
-            responseText = "Have following bots initialized:" + System.lineSeparator()
-                + userToBotQueuesMap.keySet().stream().collect(Collectors.joining(System.lineSeparator()));
-        } else {
-            responseText = "Don't recognize command '" + command + "'";
+    private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
+        var messageWords = message.getText().split(" +");
+        var command = messageWords[0];
+        var parameters = messageWords.length > 1
+                ? Arrays.copyOfRange(messageWords, 1, messageWords.length) : new String[0];
+        switch (command) {
+            case "list":
+                toUserMessageQueue.put(new TextMessage(message.getAddress()
+                        , "Have following bots initialized:" + System.lineSeparator()
+                        + userToBotQueuesMap.keySet().stream().collect(Collectors.joining(System.lineSeparator()))));
+                break;
+
+            case "schedule":
+                messageTimer.scheduleMessage(Duration.ofSeconds(7L), new TextMessage(message.getAddress()
+                    , String.join(" ", parameters)));
+                break;
+
+            default:
+                toUserMessageQueue.put(new TextMessage(message.getAddress()
+                        , "Don't recognize command '" + command + "'"));
         }
-        toUserMessageQueue.put(new TextMessage(message.getAddress(), responseText));
+    }
+
+    private void putScheduledMessagesInQueue(@Nonnull Collection<TextMessage> scheduledMessages) throws InterruptedException {
+        for (TextMessage message : scheduledMessages) {
+            fromUserMessageQueue.put(message);
+        }
     }
 
 }
