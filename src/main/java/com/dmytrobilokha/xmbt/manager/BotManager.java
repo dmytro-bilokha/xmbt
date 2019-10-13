@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class BotManager {
 
-    private static final char BOTNAME_PREFIX = '@';
+    private static final char BOT_NAME_PREFIX = '@';
     private static final Logger LOG = LoggerFactory.getLogger(BotManager.class);
 
     @Nonnull
@@ -36,49 +36,16 @@ public class BotManager {
     }
 
     public void start() {
-        connector.setIncomingMessagesQueue(fromUserMessageQueue);
-        try {
-            LOG.info("Trying to connect to the messaging server");
-            connector.connect();
-            LOG.info("Successfully connected");
-        } catch (ConnectionException ex) {
-            LOG.error("Failed to connect to the messaging server, exiting", ex);
-            return;
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            LOG.warn("Got interruption during connecting to the server, exiting", ex);
+        boolean connectedOk = connectToMessagingServer();
+        if (!connectedOk) {
             return;
         }
-        //Init echobot
-        Bot bot = new EchoBot();
-        String botName = BOTNAME_PREFIX + bot.getName();
-        BlockingQueue<TextMessage> botsQueue = new LinkedBlockingQueue<>();
-        userToBotQueuesMap.put(botName, botsQueue);
-        DuplexMessageQueueClient messageQueueClient = new DuplexMessageQueueClient(botsQueue, toUserMessageQueue);
-        bot.setMessageQueueClient(messageQueueClient);
-        Thread echoBotThread = new Thread(bot);
-        echoBotThread.setName(botName);
-        cleaner.registerThread(echoBotThread);
         cleaner.registerThread(Thread.currentThread());
-        echoBotThread.start();
+        startBots(new EchoBot());
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                TextMessage messageForUser = toUserMessageQueue.poll();
-                if (messageForUser != null) {
-                    try {
-                        connector.sendMessage(messageForUser);
-                    } catch (InvalidAddressException ex) {
-                        LOG.error("Failed to send {}", messageForUser, ex);
-                        return;
-                    } catch (InvalidConnectionStateException ex) {
-                        LOG.error("Got invalid connection state during trying to send {}", messageForUser, ex);
-                        return;
-                    }
-                }
-                TextMessage messageForBot = fromUserMessageQueue.poll();
-                if (messageForBot != null) {
-                    dispatchMessage(messageForBot);
-                }
+                processOutgoingQueue();
+                processIncomingQueue();
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -91,45 +58,92 @@ public class BotManager {
         }
     }
 
+    private boolean connectToMessagingServer() {
+        connector.setIncomingMessagesQueue(fromUserMessageQueue);
+        try {
+            LOG.info("Trying to connect to the messaging server");
+            connector.connect();
+            LOG.info("Successfully connected");
+        } catch (ConnectionException ex) {
+            LOG.error("Failed to connect to the messaging server, exiting", ex);
+            return false;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOG.warn("Got interruption during connecting to the server, exiting", ex);
+            return false;
+        }
+        return true;
+    }
+
+    private void startBots(@Nonnull Bot... bots) {
+        for (Bot bot : bots) {
+            String botName = BOT_NAME_PREFIX + bot.getName();
+            BlockingQueue<TextMessage> botsQueue = new LinkedBlockingQueue<>();
+            userToBotQueuesMap.put(botName, botsQueue);
+            DuplexMessageQueueClient messageQueueClient = new DuplexMessageQueueClient(botsQueue, toUserMessageQueue);
+            bot.setMessageQueueClient(messageQueueClient);
+            Thread botThread = new Thread(bot);
+            botThread.setName(botName);
+            cleaner.registerThread(botThread);
+            botThread.start();
+        }
+    }
+
+    private void processOutgoingQueue() {
+        TextMessage messageForUser = toUserMessageQueue.poll();
+        if (messageForUser != null) {
+            try {
+                connector.sendMessage(messageForUser);
+            } catch (InvalidAddressException ex) {
+                Thread.currentThread().interrupt();
+                LOG.error("Failed to send {}", messageForUser, ex);
+            } catch (InvalidConnectionStateException ex) {
+                Thread.currentThread().interrupt();
+                LOG.error("Got invalid connection state during trying to send {}", messageForUser, ex);
+            }
+        }
+    }
+
+    private void processIncomingQueue() throws InterruptedException {
+        TextMessage messageForBot = fromUserMessageQueue.poll();
+        if (messageForBot != null) {
+            dispatchMessage(messageForBot);
+        }
+    }
+
     private void dispatchMessage(@Nonnull TextMessage incomingMessage) throws InterruptedException {
         String messageText = incomingMessage.getText().trim();
         if (messageText.isEmpty()) {
             LOG.debug("Got message {} with empty payload, will ignore it", incomingMessage);
             return;
         }
+        if (messageText.charAt(0) == BOT_NAME_PREFIX) {
+            passMessageToBot(incomingMessage);
+        } else {
+            executeCommandFromMessage(incomingMessage);
+        }
+    }
+
+    private void passMessageToBot(@Nonnull TextMessage message) throws InterruptedException {
+        String messageText = message.getText().trim();
         int spaceIndex = messageText.indexOf(' ');
-        String firstWord;
+        String botName;
         String restOfMessage;
         if (spaceIndex < 0) {
             //The message contains only one word
-            firstWord = messageText;
+            botName = messageText;
             restOfMessage = "";
         } else {
-            firstWord = messageText.substring(0, spaceIndex);
+            botName = messageText.substring(0, spaceIndex);
             restOfMessage = messageText.substring(spaceIndex);
         }
-        if (firstWord.length() > 1 && firstWord.charAt(0) == BOTNAME_PREFIX) {
-            passMessageToBot(firstWord, new TextMessage(incomingMessage.getAddress(), restOfMessage));
-            return;
-        }
-        executeCommandFromMessage(incomingMessage);
-        BlockingQueue<TextMessage> botInQueue = userToBotQueuesMap.get(firstWord);
-        if (botInQueue == null) {
-            LOG.warn("For '{}' got a message {}, but don't have such bot in the registry", firstWord, incomingMessage);
-            return;
-        }
-        TextMessage rewritten = new TextMessage(incomingMessage.getAddress(), restOfMessage);
-        botInQueue.put(rewritten);
-    }
-
-    private void passMessageToBot(@Nonnull String botName, @Nonnull TextMessage message) throws InterruptedException {
         BlockingQueue<TextMessage> botIncomingMessageQueue = userToBotQueuesMap.get(botName);
         if (botIncomingMessageQueue == null) {
             toUserMessageQueue.put(new TextMessage(message.getAddress()
                     , "Don't have any bot with name '" + botName + "'"));
             return;
         }
-        botIncomingMessageQueue.put(message);
+        botIncomingMessageQueue.put(new TextMessage(message.getAddress(), restOfMessage));
     }
 
     private void executeCommandFromMessage(TextMessage message) throws InterruptedException {
