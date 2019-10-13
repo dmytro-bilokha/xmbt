@@ -15,6 +15,7 @@
         <logback.version>1.2.3</logback.version>
         <yasson.version>1.0.5</yasson.version>
         <javax.json.version>1.1.4</javax.json.version>
+        <smack.version>4.3.4</smack.version>
         <mybatis.version>3.5.2</mybatis.version>
         <flyway.version>6.0.1</flyway.version>
         <testng.version>7.0.0</testng.version>
@@ -51,6 +52,26 @@
             <groupId>org.glassfish</groupId>
             <artifactId>javax.json</artifactId>
             <version>${javax.json.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-tcp</artifactId>
+            <version>${smack.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-im</artifactId>
+            <version>${smack.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-extensions</artifactId>
+            <version>${smack.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-java7</artifactId>
+            <version>${smack.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mybatis</groupId>

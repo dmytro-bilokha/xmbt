@@ -8,12 +8,15 @@ import com.dmytrobilokha.xmbt.config.property.LogLevelProperty;
 import com.dmytrobilokha.xmbt.config.property.NsApiKeyProperty;
 import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
+import com.dmytrobilokha.xmbt.manager.BotManager;
+import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class Loader {
@@ -32,19 +35,25 @@ public final class Loader {
     );
 
     @Nonnull
+    private final Cleaner cleaner;
+    @Nonnull
     private final FsService fsService;
     @Nonnull
     private final ConfigService configService;
     @Nonnull
-    private final Thread mainThread;
-
-    private volatile boolean shutdownRequested;
+    private final XmppConnector xmppConnector;
+    @Nonnull
+    private final BotManager botManager;
 
     private Loader() {
-        mainThread = Thread.currentThread();
+        cleaner = new Cleaner();
         fsService = new FsService();
+        List<ConfigPropertyProducer> propertyProducers = new ArrayList<>(CONFIGFILE_PROPERTY_PRODUCERS);
+        propertyProducers.addAll(XmppConnector.getPropertyProducers());
         configService = new ConfigService(
-                fsService, SYSTEM_PROPERTY_PRODUCERS, CONFIGFILE_PROPERTY_PRODUCERS);
+                fsService, SYSTEM_PROPERTY_PRODUCERS, propertyProducers);
+        xmppConnector = new XmppConnector(configService);
+        botManager = new BotManager(xmppConnector, cleaner);
     }
 
     public static void main(@Nonnull String[] cliArgs) {
@@ -58,12 +67,13 @@ public final class Loader {
 
     private void init() {
         System.out.print("Initializing...");
+        addShutdownHook();
         try {
             configService.init();
             new LoggerInitializer(configService).init();
             Path pidFilePath = configService.getProperty(PidFilePathProperty.class).getValue();
             writePidToFile(pidFilePath);
-            addShutdownHook(pidFilePath);
+            cleaner.registerFile(pidFilePath);
             System.out.println("OK");
             detachFromTerminal();
         } catch (Exception ex) {
@@ -74,15 +84,9 @@ public final class Loader {
         LOG.info("Api key={}", configService.getProperty(NsApiKeyProperty.class).getStringValue());
     }
 
+    //TODO: rename run() and start(), to not associate with Thread
     private void run() {
-        try {
-            while (!shutdownRequested) {
-                Thread.sleep(5000);
-            }
-            LOG.info("Service shutdown requested, exiting...");
-        } catch (InterruptedException ex) {
-            LOG.error("The service execution has been interrupted");
-        }
+        botManager.start();
     }
 
     private void writePidToFile(@Nonnull Path pidFilePath) throws InitializationException {
@@ -93,18 +97,8 @@ public final class Loader {
         }
     }
 
-    void shutdown() {
-        shutdownRequested = true;
-        try {
-            mainThread.join();
-        } catch (InterruptedException ex) {
-            LOG.warn("Interrupted during waiting for the main thread to shutdown", ex);
-        }
-    }
-
-    private void addShutdownHook(@Nonnull Path pidFilePath) {
-        Runtime.getRuntime()
-                .addShutdownHook(new Cleaner(this, pidFilePath));
+    private void addShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(cleaner);
     }
 
     private void detachFromTerminal() throws IOException {

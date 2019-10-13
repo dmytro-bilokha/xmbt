@@ -7,36 +7,47 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-class Cleaner extends Thread {
+public class Cleaner extends Thread {
 
     private static final Logger LOG = LoggerFactory.getLogger(Cleaner.class);
 
     @Nonnull
-    private final Path pidFilePath;
+    private final Set<Path> filesToBeDeleted = new CopyOnWriteArraySet<>();
     @Nonnull
-    private final Loader loader;
+    private final Set<Thread> threadsToBeInterrupted = new CopyOnWriteArraySet<>();
 
-    Cleaner(@Nonnull Loader loader, @Nonnull Path pidFilePath) {
-        this.loader = loader;
-        this.pidFilePath = pidFilePath;
+    Cleaner() {
         this.setName("cleaner-hook");
+    }
+
+    public void registerThread(@Nonnull Thread thread) {
+        threadsToBeInterrupted.add(thread);
+        LOG.debug("Registered {} to be interrupted on exit", thread);
+    }
+
+    public void registerFile(@Nonnull Path filePath) {
+        filesToBeDeleted.add(filePath);
+        LOG.debug("Registered {} to be deleted on exit", filePath);
     }
 
     @Override
     public void run() {
-        deletePidFile();
-        loader.shutdown();
+        threadsToBeInterrupted.forEach(Thread::interrupt);
+        LOG.debug("Interrupt signal has been sent to {}", threadsToBeInterrupted);
+        filesToBeDeleted.forEach(this::deletePidFile);
     }
 
-    private void deletePidFile() {
+    private void deletePidFile(Path filePath) {
         try {
-            Files.deleteIfExists(pidFilePath);
+            Files.deleteIfExists(filePath);
         } catch (IOException ex) {
-            LOG.error("Failed to delete PID file '" + pidFilePath + "'", ex);
+            LOG.error("Failed to delete file '{}'", filePath, ex);
             return;
         }
-        LOG.debug("PID file '" + pidFilePath + "' has been deleted");
+        LOG.debug("File '{}' has been deleted", filePath);
     }
 
 }
