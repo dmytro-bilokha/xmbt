@@ -1,7 +1,7 @@
 package com.dmytrobilokha.xmbt.bot.echo;
 
 import com.dmytrobilokha.xmbt.manager.Bot;
-import com.dmytrobilokha.xmbt.manager.DuplexMessageQueueClient;
+import com.dmytrobilokha.xmbt.manager.BotConnector;
 import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,14 +10,14 @@ public class EchoBot implements Bot {
 
     private static final Logger LOG = LoggerFactory.getLogger(EchoBot.class);
 
-    private DuplexMessageQueueClient messageQueueClient;
+    private BotConnector messageQueueClient;
 
     @Override
     public String getName() {
         return "echo";
     }
 
-    public void setMessageQueueClient(DuplexMessageQueueClient messageQueueClient) {
+    public void setConnector(BotConnector messageQueueClient) {
         this.messageQueueClient = messageQueueClient;
     }
 

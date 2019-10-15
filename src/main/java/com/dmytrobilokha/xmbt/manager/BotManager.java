@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
-//TODO: add '@botname says:' line on top of each message from bot
 //TODO: add scheduling confirmation message, improve scheduling
 public class BotManager {
 
@@ -90,8 +89,9 @@ public class BotManager {
             var botName = BOT_NAME_PREFIX + bot.getName();
             var botsQueue = new LinkedBlockingQueue<TextMessage>();
             userToBotQueuesMap.put(botName, botsQueue);
-            var messageQueueClient = new DuplexMessageQueueClient(botsQueue, toUserMessageQueue);
-            bot.setMessageQueueClient(messageQueueClient);
+            var botMessagePrefix = botName + " says:" + System.lineSeparator();
+            var messageQueueClient = new BotConnector(botsQueue, toUserMessageQueue, botMessagePrefix);
+            bot.setConnector(messageQueueClient);
             var botThread = new Thread(bot);
             botThread.setName(botName);
             cleaner.registerThread(botThread);
@@ -115,10 +115,9 @@ public class BotManager {
     }
 
     private void processIncomingQueue() throws InterruptedException {
-        //TODO: rename
-        TextMessage messageForBot = fromUserMessageQueue.poll();
-        if (messageForBot != null) {
-            dispatchMessage(messageForBot);
+        TextMessage incomingMessage = fromUserMessageQueue.poll();
+        if (incomingMessage != null) {
+            dispatchMessage(incomingMessage);
         }
     }
 

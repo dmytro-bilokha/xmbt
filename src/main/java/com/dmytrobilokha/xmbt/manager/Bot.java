@@ -4,6 +4,6 @@ public interface Bot extends Runnable {
 
     String getName();
 
-    void setMessageQueueClient(DuplexMessageQueueClient messageQueueClient);
+    void setConnector(BotConnector messageQueueClient);
 
 }

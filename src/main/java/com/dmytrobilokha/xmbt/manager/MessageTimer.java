@@ -8,11 +8,13 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class MessageTimer {
 
+    @Nonnull
     private static final TextMessage emptyMessage = new TextMessage("", "");
 
     @Nonnull
@@ -63,7 +65,23 @@ public class MessageTimer {
             return message.getText().compareTo(o.message.getText());
         }
 
-        //TODO: add equals compliant with compareTo
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            ScheduledMessage that = (ScheduledMessage) o;
+            return dateTime.equals(that.dateTime)
+                    && message.equals(that.message);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dateTime);
+        }
     }
 
 }
