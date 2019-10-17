@@ -75,13 +75,17 @@ public class XmppConnector {
             throw new ConnectionException(
                     "Unable to connect to XMPP server '" + server + "' with username '" + username + "'", ex);
         }
+        //TODO: make it separate class, not inner
         connection.addAsyncStanzaListener(new StanzaListener() {
             //TODO: add auto accept for roaster invites
-            public void processStanza(Stanza stanza)
-                    throws SmackException.NotConnectedException,InterruptedException,
-                    SmackException.NotLoggedInException {
+            @Override
+            public void processStanza(Stanza stanza) throws InterruptedException {
                 if (!(stanza instanceof Message)) {
                     return;
+                }
+                //TODO: make this nicer
+                if (incomingMessagesQueue == null) {
+                    throw new IllegalStateException("No incoming messages queue found!");
                 }
                 Message xmppMessage = (Message) stanza;
                 LOG.debug("Got stanza in listener {}", stanza);

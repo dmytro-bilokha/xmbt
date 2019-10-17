@@ -17,10 +17,12 @@ public class EchoBot implements Bot {
         return "echo";
     }
 
+    @Override
     public void setConnector(BotConnector messageQueueClient) {
         this.messageQueueClient = messageQueueClient;
     }
 
+    @Override
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {

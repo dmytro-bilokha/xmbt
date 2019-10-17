@@ -176,10 +176,12 @@ public class BotManager {
             default:
                 toUserMessageQueue.put(new TextMessage(message.getAddress()
                         , "Don't recognize command '" + command + "'"));
+                break;
         }
     }
 
-    private void putScheduledMessagesInQueue(@Nonnull Collection<TextMessage> scheduledMessages) throws InterruptedException {
+    private void putScheduledMessagesInQueue(
+            @Nonnull Collection<TextMessage> scheduledMessages) throws InterruptedException {
         for (TextMessage message : scheduledMessages) {
             fromUserMessageQueue.put(message);
         }

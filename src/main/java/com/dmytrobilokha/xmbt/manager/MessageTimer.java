@@ -15,15 +15,15 @@ import java.util.stream.Collectors;
 public class MessageTimer {
 
     @Nonnull
-    private static final TextMessage emptyMessage = new TextMessage("", "");
+    private static final TextMessage EMPTY_MESSAGE = new TextMessage("", "");
 
     @Nonnull
-    private ScheduledMessage earliestMessage;
+    private final ScheduledMessage earliestMessage;
     @Nonnull
-    private NavigableSet<ScheduledMessage> scheduledMessages;
+    private final NavigableSet<ScheduledMessage> scheduledMessages;
 
     public MessageTimer() {
-        this.earliestMessage = new ScheduledMessage(LocalDateTime.now(), emptyMessage);
+        this.earliestMessage = new ScheduledMessage(LocalDateTime.now(), EMPTY_MESSAGE);
         this.scheduledMessages = new TreeSet<>();
     }
 
@@ -34,7 +34,7 @@ public class MessageTimer {
     @Nonnull
     List<TextMessage> tick(long milliseconds) throws InterruptedException {
         Thread.sleep(milliseconds);
-        var jitMessage = new ScheduledMessage(LocalDateTime.now(), emptyMessage);
+        var jitMessage = new ScheduledMessage(LocalDateTime.now(), EMPTY_MESSAGE);
         var timedMessages = new HashSet<>(scheduledMessages.subSet(earliestMessage, jitMessage));
         var result = timedMessages.stream().map(sm -> sm.message).collect(Collectors.toList());
         scheduledMessages.removeAll(timedMessages);
