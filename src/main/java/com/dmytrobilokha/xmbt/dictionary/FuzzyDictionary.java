@@ -7,43 +7,43 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FuzzyDictionary {
+public class FuzzyDictionary<T> {
 
     private final int[] alphabet;
-    private final List<Phrase> dictionaryStore;
+    private final List<Phrase<T>> dictionaryStore;
 
-    public FuzzyDictionary(@Nonnull String alphabetString) {
+    private FuzzyDictionary(@Nonnull String alphabetString) {
         this.alphabet = alphabetString.toLowerCase().codePoints().sorted().distinct().toArray();
         this.dictionaryStore = new ArrayList<>();
     }
 
-    public void putPhrase(@Nonnull String phraseText) {
-        dictionaryStore.add(new Phrase(phraseText));
+    public static <T> FuzzyDictionary<T> withLatinLetters() {
+        return new FuzzyDictionary<>("qwertyuioplkjhgfdsazxcvbnm");
     }
 
-    public void putPhrases(@Nonnull List<String> phrasesText) {
-        phrasesText.forEach(this::putPhrase);
+    public void put(@Nonnull String phraseText, @Nonnull T phraseObject) {
+        dictionaryStore.add(new Phrase<>(phraseText, phraseObject));
     }
 
-    public List<String> findMatchingPhrases(@Nonnull String fuzzyPhrase) {
-        Phrase fuzzy = new Phrase(fuzzyPhrase);
+    @Nonnull
+    public List<T> get(@Nonnull String fuzzyPhrase) {
+        Phrase fuzzy = new Phrase<>(fuzzyPhrase, null);
         return dictionaryStore.stream()
                 .filter(p -> p.matches(fuzzy))
-                .map(p -> p.text)
+                .map(p -> p.phraseObject)
                 .collect(Collectors.toList());
     }
 
-    private class Phrase {
+    private class Phrase<T> {
 
-        @Nonnull
-        final String text;
+        final T phraseObject;
         @Nonnull
         final int[] codePoints;
         @Nonnull
         final BitSet key;
 
-        Phrase(@Nonnull String phraseText) {
-            this.text = phraseText;
+        Phrase(@Nonnull String phraseText, T phraseObject) {
+            this.phraseObject = phraseObject;
             this.codePoints = phraseText.toLowerCase()
                     .codePoints()
                     .filter(codePoint -> Arrays.binarySearch(alphabet, codePoint) >= 0)

@@ -9,8 +9,6 @@ import java.util.List;
 @Test(groups = "unit")
 public class FuzzyDictionaryTest {
 
-    private static final String LATIN_ALPHABET = "qwertyuioplkjhgfdsazxcvbnm";
-
     @DataProvider(name = "dictionaryCases")
     public Object[][] getDictionaryCases() {
         return new Object[][]{
@@ -29,9 +27,9 @@ public class FuzzyDictionaryTest {
 
     @Test(dataProvider = "dictionaryCases")
     public void testDictionarySearchWithLatinChars(List<String> phrases, String lookupString, List<String> result) {
-        FuzzyDictionary dictionary = new FuzzyDictionary(LATIN_ALPHABET);
-        dictionary.putPhrases(phrases);
-        Assert.assertEquals(result, dictionary.findMatchingPhrases(lookupString));
+        FuzzyDictionary<String> dictionary = FuzzyDictionary.withLatinLetters();
+        phrases.forEach(phrase -> dictionary.put(phrase, phrase));
+        Assert.assertEquals(result, dictionary.get(lookupString));
     }
 
 }

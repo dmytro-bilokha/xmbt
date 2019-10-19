@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,10 +15,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
-//TODO: add scheduling confirmation message, improve scheduling
 public class BotManager {
 
-    private static final char BOT_NAME_PREFIX = '@';
+    static final char BOT_NAME_PREFIX = '@';
     private static final Logger LOG = LoggerFactory.getLogger(BotManager.class);
 
     @Nonnull
@@ -122,7 +119,7 @@ public class BotManager {
     }
 
     private void dispatchMessage(@Nonnull TextMessage incomingMessage) throws InterruptedException {
-        var messageText = incomingMessage.getText().trim();
+        var messageText = incomingMessage.getText().stripLeading();
         if (messageText.isEmpty()) {
             LOG.debug("Got message {} with empty payload, will ignore it", incomingMessage);
             return;
@@ -135,18 +132,9 @@ public class BotManager {
     }
 
     private void passMessageToBot(@Nonnull TextMessage message) throws InterruptedException {
-        var messageText = message.getText().trim();
-        int spaceIndex = messageText.indexOf(' ');
-        String botName;
-        String restOfMessage;
-        if (spaceIndex < 0) {
-            //The message contains only one word
-            botName = messageText;
-            restOfMessage = "";
-        } else {
-            botName = messageText.substring(0, spaceIndex);
-            restOfMessage = messageText.substring(spaceIndex);
-        }
+        var messageParts = message.getText().stripLeading().split(" +", 2);
+        var botName = messageParts[0];
+        var restOfMessage = messageParts.length > 1 ? messageParts[1] : "";
         var botIncomingMessageQueue = userToBotQueuesMap.get(botName);
         if (botIncomingMessageQueue == null) {
             toUserMessageQueue.put(new TextMessage(message.getAddress()
@@ -157,10 +145,7 @@ public class BotManager {
     }
 
     private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
-        var messageWords = message.getText().split(" +");
-        var command = messageWords[0];
-        var parameters = messageWords.length > 1
-                ? Arrays.copyOfRange(messageWords, 1, messageWords.length) : new String[0];
+        var command = message.getText().split(" +", 2)[0];
         switch (command) {
             case "list":
                 toUserMessageQueue.put(new TextMessage(message.getAddress()
@@ -169,8 +154,7 @@ public class BotManager {
                 break;
 
             case "schedule":
-                messageTimer.scheduleMessage(Duration.ofSeconds(7L), new TextMessage(message.getAddress()
-                    , String.join(" ", parameters)));
+                toUserMessageQueue.put(messageTimer.scheduleMessage(message));
                 break;
 
             default:

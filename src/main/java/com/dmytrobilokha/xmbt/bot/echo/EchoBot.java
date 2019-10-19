@@ -6,6 +6,8 @@ import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+
 public class EchoBot implements Bot {
 
     private static final Logger LOG = LoggerFactory.getLogger(EchoBot.class);
@@ -18,7 +20,7 @@ public class EchoBot implements Bot {
     }
 
     @Override
-    public void setConnector(BotConnector messageQueueClient) {
+    public void setConnector(@Nonnull BotConnector messageQueueClient) {
         this.messageQueueClient = messageQueueClient;
     }
 
