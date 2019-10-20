@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.NavigableSet;
 import java.util.Scanner;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SubscribeCommand implements Command {
@@ -29,6 +30,7 @@ public class SubscribeCommand implements Command {
             + BotManager.BOT_NAME_PREFIX + "botname [message_to_bot...]";
     private static final TextMessage EMPTY_MESSAGE = new TextMessage("", "");
     private static final int ONE = 1;
+    private static final Pattern READ_LEAST_OF_SCANNER_PATTERN = Pattern.compile("\\A");
 
     @Nonnull
     private final BotRegistry botRegistry;
@@ -91,9 +93,6 @@ public class SubscribeCommand implements Command {
             String botName = "";
             while (commandMessageScanner.hasNext()) {
                 var nextToken = commandMessageScanner.next();
-                if (nextToken.isEmpty()) {
-                    continue;
-                }
                 if (nextToken.charAt(0) == BotManager.BOT_NAME_PREFIX) {
                     botName = nextToken;
                     break;
@@ -166,7 +165,7 @@ public class SubscribeCommand implements Command {
             throw new InvalidUserInputException("Cannot schedule in past");
         }
         String scheduleMessageText = contentScanner.hasNext()
-                ? contentScanner.useDelimiter("\\A").next() : "";
+                ? contentScanner.useDelimiter(READ_LEAST_OF_SCANNER_PATTERN).next() : "";
         scheduledMessages.add(new ScheduledMessage(
                 nextDateTime
                 , messageSchedule

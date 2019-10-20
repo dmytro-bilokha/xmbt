@@ -60,12 +60,9 @@ public final class Loader {
     }
 
     public static void main(@Nonnull String[] cliArgs) {
-        new Loader().start();
-    }
-
-    private void start() {
-        init();
-        run();
+        Loader loader = new Loader();
+        loader.init();
+        loader.go();
     }
 
     private void init() {
@@ -88,9 +85,8 @@ public final class Loader {
         LOG.info("Api key={}", configService.getProperty(NsApiKeyProperty.class).getStringValue());
     }
 
-    //TODO: rename run() and start(), to not associate with Thread
-    private void run() {
-        botManager.start();
+    private void go() {
+        botManager.go();
     }
 
     private void writePidToFile(@Nonnull Path pidFilePath) throws InitializationException {

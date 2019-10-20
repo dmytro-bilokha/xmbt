@@ -11,11 +11,14 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class BotManager {
 
     public static final char BOT_NAME_PREFIX = '@';
+    private static final Pattern WORDS_SPLIT_PATTERN = Pattern.compile(" +");
     private static final Logger LOG = LoggerFactory.getLogger(BotManager.class);
+
 
     @Nonnull
     private final XmppConnector connector;
@@ -37,7 +40,7 @@ public class BotManager {
         }
     }
 
-    public void start() {
+    public void go() {
         boolean connectedOk = connectToMessagingServer();
         if (!connectedOk) {
             return;
@@ -115,7 +118,7 @@ public class BotManager {
     }
 
     private void passMessageToBot(@Nonnull TextMessage message) throws InterruptedException {
-        var messageParts = message.getText().stripLeading().split(" +", 2);
+        var messageParts = WORDS_SPLIT_PATTERN.split(message.getText().stripLeading(), 2);
         var botName = messageParts[0];
         var restOfMessage = messageParts.length > 1 ? messageParts[1] : "";
         var enqueuedSuccessfully = botRegistry
@@ -127,7 +130,7 @@ public class BotManager {
     }
 
     private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
-        var commandName = message.getText().split(" +", 2)[0];
+        var commandName = WORDS_SPLIT_PATTERN.split(message.getText(), 2)[0];
         Command command = commandMap.get(commandName);
         if (command == null) {
             botRegistry.enqueueMessageForUser(new TextMessage(message.getAddress()
