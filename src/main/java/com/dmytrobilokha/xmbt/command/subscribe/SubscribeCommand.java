@@ -25,8 +25,9 @@ import java.util.stream.Collectors;
 
 public class SubscribeCommand implements Command {
 
+    private static final String COMMAND_NAME = "subscribe";
     private static final String USAGE = "Usage: " + System.lineSeparator()
-            + "schedule HH:mm [space_separated_days_of_week] "
+            + COMMAND_NAME + " HH:mm [space_separated_days_of_week] "
             + BotManager.BOT_NAME_PREFIX + "botname [message_to_bot...]";
     private static final TextMessage EMPTY_MESSAGE = new TextMessage("", "");
     private static final int ONE = 1;
@@ -63,7 +64,7 @@ public class SubscribeCommand implements Command {
     @Nonnull
     @Override
     public String getName() {
-        return "subscribe";
+        return COMMAND_NAME;
     }
 
     @Override
