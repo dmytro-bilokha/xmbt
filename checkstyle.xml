@@ -175,9 +175,6 @@
         <!-- File name should correspond to the class name -->
         <module name="OuterTypeFilename"/>
 
-        <!-- No end-line comments -->
-        <module name="TrailingComment"/>
-
         <!-- 10L and not 10l in constants -->
         <module name="UpperEll"/>
 

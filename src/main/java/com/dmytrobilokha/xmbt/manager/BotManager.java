@@ -1,42 +1,40 @@
 package com.dmytrobilokha.xmbt.manager;
 
-import com.dmytrobilokha.xmbt.boot.Cleaner;
 import com.dmytrobilokha.xmbt.bot.echo.EchoBot;
+import com.dmytrobilokha.xmbt.command.Command;
+import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BotManager {
 
-    static final char BOT_NAME_PREFIX = '@';
+    public static final char BOT_NAME_PREFIX = '@';
     private static final Logger LOG = LoggerFactory.getLogger(BotManager.class);
 
     @Nonnull
     private final XmppConnector connector;
     @Nonnull
-    private final Cleaner cleaner;
+    private final BotRegistry botRegistry;
     @Nonnull
-    private final MessageTimer messageTimer;
-    @Nonnull
-    private final BlockingQueue<TextMessage> toUserMessageQueue = new LinkedBlockingQueue<>();
-    @Nonnull
-    private final BlockingQueue<TextMessage> fromUserMessageQueue = new LinkedBlockingQueue<>();
-    @Nonnull
-    private final ConcurrentMap<String, BlockingQueue<TextMessage>> userToBotQueuesMap = new ConcurrentHashMap<>();
+    private final Map<String, Command> commandMap;
 
-    public BotManager(@Nonnull XmppConnector connector, @Nonnull Cleaner cleaner, @Nonnull MessageTimer messageTimer) {
+    public BotManager(
+            @Nonnull XmppConnector connector
+            , @Nonnull BotRegistry botRegistry
+            , @Nonnull CommandFactory commandFactory
+    ) {
         this.connector = connector;
-        this.cleaner = cleaner;
-        this.messageTimer = messageTimer;
+        this.botRegistry = botRegistry;
+        this.commandMap = new HashMap<>();
+        for (Command command : commandFactory.produceAll(botRegistry)) {
+            commandMap.put(command.getName(), command);
+        }
     }
 
     public void start() {
@@ -44,14 +42,15 @@ public class BotManager {
         if (!connectedOk) {
             return;
         }
-        cleaner.registerThread(Thread.currentThread());
-        startBots(new EchoBot());
+        botRegistry.startBots(new EchoBot());
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 processOutgoingQueue();
                 processIncomingQueue();
-                var scheduledMessages = messageTimer.tick(1000L);
-                putScheduledMessagesInQueue(scheduledMessages);
+                for (Command command : commandMap.values()) {
+                    command.tick();
+                }
+                Thread.sleep(1000L);
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -65,7 +64,6 @@ public class BotManager {
     }
 
     private boolean connectToMessagingServer() {
-        connector.setIncomingMessagesQueue(fromUserMessageQueue);
         try {
             LOG.info("Trying to connect to the messaging server");
             connector.connect();
@@ -81,23 +79,8 @@ public class BotManager {
         return true;
     }
 
-    private void startBots(@Nonnull Bot... bots) {
-        for (Bot bot : bots) {
-            var botName = BOT_NAME_PREFIX + bot.getName();
-            var botsQueue = new LinkedBlockingQueue<TextMessage>();
-            userToBotQueuesMap.put(botName, botsQueue);
-            var botMessagePrefix = botName + " says:" + System.lineSeparator();
-            var messageQueueClient = new BotConnector(botsQueue, toUserMessageQueue, botMessagePrefix);
-            bot.setConnector(messageQueueClient);
-            var botThread = new Thread(bot);
-            botThread.setName(botName);
-            cleaner.registerThread(botThread);
-            botThread.start();
-        }
-    }
-
     private void processOutgoingQueue() {
-        TextMessage messageForUser = toUserMessageQueue.poll();
+        TextMessage messageForUser = botRegistry.pollOutgoingMessagesQueue();
         if (messageForUser != null) {
             try {
                 connector.sendMessage(messageForUser);
@@ -112,7 +95,7 @@ public class BotManager {
     }
 
     private void processIncomingQueue() throws InterruptedException {
-        TextMessage incomingMessage = fromUserMessageQueue.poll();
+        TextMessage incomingMessage = botRegistry.pollIncomingMessagesQueue();
         if (incomingMessage != null) {
             dispatchMessage(incomingMessage);
         }
@@ -135,40 +118,23 @@ public class BotManager {
         var messageParts = message.getText().stripLeading().split(" +", 2);
         var botName = messageParts[0];
         var restOfMessage = messageParts.length > 1 ? messageParts[1] : "";
-        var botIncomingMessageQueue = userToBotQueuesMap.get(botName);
-        if (botIncomingMessageQueue == null) {
-            toUserMessageQueue.put(new TextMessage(message.getAddress()
+        var enqueuedSuccessfully = botRegistry
+                .enqueueMessageForBot(botName, new TextMessage(message.getAddress(), restOfMessage));
+        if (!enqueuedSuccessfully) {
+            botRegistry.enqueueMessageForUser(new TextMessage(message.getAddress()
                     , "Don't have any bot with name '" + botName + "'"));
-            return;
         }
-        botIncomingMessageQueue.put(new TextMessage(message.getAddress(), restOfMessage));
     }
 
     private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
-        var command = message.getText().split(" +", 2)[0];
-        switch (command) {
-            case "list":
-                toUserMessageQueue.put(new TextMessage(message.getAddress()
-                        , "Have following bots initialized:" + System.lineSeparator()
-                        + userToBotQueuesMap.keySet().stream().collect(Collectors.joining(System.lineSeparator()))));
-                break;
-
-            case "schedule":
-                toUserMessageQueue.put(messageTimer.scheduleMessage(message));
-                break;
-
-            default:
-                toUserMessageQueue.put(new TextMessage(message.getAddress()
-                        , "Don't recognize command '" + command + "'"));
-                break;
+        var commandName = message.getText().split(" +", 2)[0];
+        Command command = commandMap.get(commandName);
+        if (command == null) {
+            botRegistry.enqueueMessageForUser(new TextMessage(message.getAddress()
+                    , "Don't recognize command '" + commandName + "'"));
+            return;
         }
-    }
-
-    private void putScheduledMessagesInQueue(
-            @Nonnull Collection<TextMessage> scheduledMessages) throws InterruptedException {
-        for (TextMessage message : scheduledMessages) {
-            fromUserMessageQueue.put(message);
-        }
+        command.execute(message);
     }
 
 }

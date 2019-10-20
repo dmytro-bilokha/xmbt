@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.boot;
 
+import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.config.ConfigPropertyProducer;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.dmytrobilokha.xmbt.config.property.ConfigFilePathProperty;
@@ -9,7 +10,7 @@ import com.dmytrobilokha.xmbt.config.property.NsApiKeyProperty;
 import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
-import com.dmytrobilokha.xmbt.manager.MessageTimer;
+import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +54,9 @@ public final class Loader {
         propertyProducers.addAll(XmppConnector.getPropertyProducers());
         configService = new ConfigService(
                 fsService, SYSTEM_PROPERTY_PRODUCERS, propertyProducers);
-        xmppConnector = new XmppConnector(configService);
-        botManager = new BotManager(xmppConnector, cleaner, new MessageTimer());
+        BotRegistry botRegistry = new BotRegistry(cleaner);
+        xmppConnector = new XmppConnector(configService, botRegistry);
+        botManager = new BotManager(xmppConnector, botRegistry, new CommandFactory());
     }
 
     public static void main(@Nonnull String[] cliArgs) {
@@ -75,6 +77,7 @@ public final class Loader {
             Path pidFilePath = configService.getProperty(PidFilePathProperty.class).getValue();
             writePidToFile(pidFilePath);
             cleaner.registerFile(pidFilePath);
+            cleaner.registerThread(Thread.currentThread());
             System.out.println("OK");
             detachFromTerminal();
         } catch (Exception ex) {

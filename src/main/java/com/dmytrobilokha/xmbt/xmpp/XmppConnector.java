@@ -2,16 +2,15 @@ package com.dmytrobilokha.xmbt.xmpp;
 
 import com.dmytrobilokha.xmbt.config.ConfigPropertyProducer;
 import com.dmytrobilokha.xmbt.config.ConfigService;
+import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import com.dmytrobilokha.xmbt.manager.ConnectionException;
 import com.dmytrobilokha.xmbt.manager.InvalidAddressException;
 import com.dmytrobilokha.xmbt.manager.InvalidConnectionStateException;
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.StanzaTypeFilter;
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -22,7 +21,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
 public class XmppConnector {
 
@@ -30,13 +28,14 @@ public class XmppConnector {
 
     @Nonnull
     private final ConfigService configService;
+    @Nonnull
+    private final BotRegistry botRegistry;
     @CheckForNull
     private AbstractXMPPConnection connection;
-    @CheckForNull
-    private BlockingQueue<TextMessage> incomingMessagesQueue;
 
-    public XmppConnector(@Nonnull ConfigService configService) {
+    public XmppConnector(@Nonnull ConfigService configService, @Nonnull BotRegistry botRegistry) {
         this.configService = configService;
+        this.botRegistry = botRegistry;
     }
 
     @Nonnull
@@ -48,14 +47,9 @@ public class XmppConnector {
         );
     }
 
-    public void setIncomingMessagesQueue(@Nonnull BlockingQueue<TextMessage> incomingMessagesQueue) {
-        this.incomingMessagesQueue = incomingMessagesQueue;
-    }
-
     public void connect() throws ConnectionException, InterruptedException {
-        //TODO: make this nicer
-        if (incomingMessagesQueue == null) {
-            throw new IllegalStateException("No incoming messages queue found!");
+        if (connection != null) {
+            throw new ConnectionException("Unable to connect, connetion has been established already");
         }
         String username = configService.getProperty(XmppUsernameProperty.class).getStringValue();
         String password = configService.getProperty(XmppPasswordProperty.class).getStringValue();
@@ -75,30 +69,7 @@ public class XmppConnector {
             throw new ConnectionException(
                     "Unable to connect to XMPP server '" + server + "' with username '" + username + "'", ex);
         }
-        //TODO: make it separate class, not inner
-        connection.addAsyncStanzaListener(new StanzaListener() {
-            //TODO: add auto accept for roaster invites
-            @Override
-            public void processStanza(Stanza stanza) throws InterruptedException {
-                if (!(stanza instanceof Message)) {
-                    return;
-                }
-                //TODO: make this nicer
-                if (incomingMessagesQueue == null) {
-                    throw new IllegalStateException("No incoming messages queue found!");
-                }
-                Message xmppMessage = (Message) stanza;
-                LOG.debug("Got stanza in listener {}", stanza);
-                if (xmppMessage.getBody() == null) {
-                    LOG.debug("Ignoring stanza message {}, because its body is null", xmppMessage);
-                    return;
-                }
-                TextMessage messageFromUser = new TextMessage(xmppMessage.getFrom().toString(), xmppMessage.getBody());
-                LOG.debug("Putting to queue {}", messageFromUser);
-                incomingMessagesQueue.put(messageFromUser);
-            }
-        }, StanzaTypeFilter.MESSAGE);
-
+        connection.addAsyncStanzaListener(new AsyncStanzaListener(botRegistry), StanzaTypeFilter.MESSAGE);
     }
 
     public void sendMessage(@Nonnull TextMessage message)
@@ -120,6 +91,7 @@ public class XmppConnector {
     public void disconnect() {
         if (connection != null) {
             connection.disconnect();
+            connection = null; //NOPMD
         }
     }
 
