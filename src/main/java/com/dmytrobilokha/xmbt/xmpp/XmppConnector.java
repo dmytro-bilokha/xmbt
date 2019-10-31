@@ -12,7 +12,10 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.StanzaTypeFilter;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
+import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
 import org.slf4j.Logger;
@@ -63,6 +66,13 @@ public class XmppConnector {
         }
         try {
             connection.connect().login();
+            Roster.getInstanceFor(connection).setSubscriptionMode(Roster.SubscriptionMode.accept_all);
+            DeliveryReceiptManager.getInstanceFor(connection).autoAddDeliveryReceiptRequests();
+            var presence = new Presence(Presence.Type.available);
+            presence.setStatus("Up and running");
+            presence.setPriority(24);
+            presence.setMode(Presence.Mode.available);
+            connection.sendStanza(presence);
         } catch (IOException ex) {
             throw new ConnectionException(
                     "I/O exception during trying to connect to XMPP server '" + server + "'", ex);
@@ -83,6 +93,7 @@ public class XmppConnector {
         Message xmppMessage;
         try {
             xmppMessage = new Message(JidCreate.from(message.getAddress()), message.getText());
+            xmppMessage.setType(Message.Type.chat);
         } catch (XmppStringprepException ex) {
             throw new InvalidAddressException("Unable to create XMPP address from '" + message.getAddress() + "'", ex);
         }

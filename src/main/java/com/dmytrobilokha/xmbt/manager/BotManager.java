@@ -95,10 +95,12 @@ public class BotManager {
         }
         if (ROOT_NAME.equals(messageFromBot.getReceiver())) {
             try {
-                connector.sendMessage(
-                        messageFromBot.getTextMessage().withNewText(
+                var messageToUser = messageFromBot.getSender().indexOf(BOT_NAME_PREFIX) != 0
+                        ? messageFromBot.getTextMessage()
+                        : messageFromBot.getTextMessage().withNewText(
                                 messageFromBot.getSender() + " says:" + System.lineSeparator()
-                                        + messageFromBot.getTextMessage().getText()));
+                                        + messageFromBot.getTextMessage().getText());
+                connector.sendMessage(messageToUser);
             } catch (InvalidAddressException ex) {
                 Thread.currentThread().interrupt();
                 LOG.error("Failed to send {}", messageFromBot, ex);
