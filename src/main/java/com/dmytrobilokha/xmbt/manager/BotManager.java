@@ -1,9 +1,13 @@
 package com.dmytrobilokha.xmbt.manager;
 
+import com.dmytrobilokha.xmbt.api.Request;
+import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.Response;
+import com.dmytrobilokha.xmbt.api.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.TextMessage;
 import com.dmytrobilokha.xmbt.bot.echo.EchoBot;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
-import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +20,11 @@ import java.util.regex.Pattern;
 public class BotManager {
 
     public static final char BOT_NAME_PREFIX = '@';
+    private static final String ROOT_NAME = "ROOT";
     private static final Pattern WORDS_SPLIT_PATTERN = Pattern.compile(" +");
     private static final Logger LOG = LoggerFactory.getLogger(BotManager.class);
 
+    private long currentMessageId = 1;
 
     @Nonnull
     private final XmppConnector connector;
@@ -83,22 +89,36 @@ public class BotManager {
     }
 
     private void processOutgoingQueue() {
-        TextMessage messageForUser = botRegistry.pollOutgoingMessagesQueue();
-        if (messageForUser != null) {
+        var messageFromBot = botRegistry.pollMessageFromBots();
+        if (messageFromBot == null) {
+            return;
+        }
+        if (ROOT_NAME.equals(messageFromBot.getReceiver())) {
             try {
-                connector.sendMessage(messageForUser);
+                connector.sendMessage(
+                        messageFromBot.getTextMessage().withNewText(
+                                messageFromBot.getSender() + " says:" + System.lineSeparator()
+                                        + messageFromBot.getTextMessage().getText()));
             } catch (InvalidAddressException ex) {
                 Thread.currentThread().interrupt();
-                LOG.error("Failed to send {}", messageForUser, ex);
+                LOG.error("Failed to send {}", messageFromBot, ex);
             } catch (InvalidConnectionStateException ex) {
                 Thread.currentThread().interrupt();
-                LOG.error("Got invalid connection state during trying to send {}", messageForUser, ex);
+                LOG.error("Got invalid connection state during trying to send {}", messageFromBot, ex);
             }
+            return;
         }
+        Command command = commandMap.get(messageFromBot.getReceiver());
+        if (command == null) {
+            LOG.error("Cannot find command {} which should receive message {}"
+                    , messageFromBot.getReceiver(), messageFromBot);
+            return;
+        }
+        //TODO: implement command getting response to its request
     }
 
     private void processIncomingQueue() throws InterruptedException {
-        TextMessage incomingMessage = botRegistry.pollIncomingMessagesQueue();
+        TextMessage incomingMessage = botRegistry.pollMessageFromUser();
         if (incomingMessage != null) {
             dispatchMessage(incomingMessage);
         }
@@ -121,23 +141,37 @@ public class BotManager {
         var messageParts = WORDS_SPLIT_PATTERN.split(message.getText().stripLeading(), 2);
         var botName = messageParts[0];
         var restOfMessage = messageParts.length > 1 ? messageParts[1] : "";
-        var enqueuedSuccessfully = botRegistry
-                .enqueueMessageForBot(botName, new TextMessage(message.getAddress(), restOfMessage));
-        if (!enqueuedSuccessfully) {
-            botRegistry.enqueueMessageForUser(new TextMessage(message.getAddress()
-                    , "Don't have any bot with name '" + botName + "'"));
+        var requestMessage = new RequestMessage(
+                currentMessageId++
+                , ROOT_NAME
+                , botName
+                , Request.RESPOND
+                , new TextMessage(message.getAddress(), restOfMessage)
+        );
+        if (!botRegistry.enqueueRequestMessage(requestMessage)) {
+            botRegistry.enqueueResponseMessage(
+                    new ResponseMessage(requestMessage, Response.INVALID_RECEIVER
+                            , "Don't have any bot with name '" + botName + "'"));
         }
     }
 
     private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
         var commandName = WORDS_SPLIT_PATTERN.split(message.getText(), 2)[0];
+        var requestMessage = new RequestMessage(
+                currentMessageId++
+                , ROOT_NAME
+                , commandName
+                , Request.RESPOND
+                , message
+        );
         Command command = commandMap.get(commandName);
         if (command == null) {
-            botRegistry.enqueueMessageForUser(new TextMessage(message.getAddress()
-                    , "Don't recognize command '" + commandName + "'"));
+            botRegistry.enqueueResponseMessage(
+                    new ResponseMessage(requestMessage, Response.INVALID_RECEIVER
+                            , "Don't recognize command '" + commandName + "'"));
             return;
         }
-        command.execute(message);
+        command.acceptRequest(requestMessage);
     }
 
 }

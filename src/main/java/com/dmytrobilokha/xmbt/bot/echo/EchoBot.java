@@ -1,8 +1,10 @@
 package com.dmytrobilokha.xmbt.bot.echo;
 
-import com.dmytrobilokha.xmbt.manager.Bot;
-import com.dmytrobilokha.xmbt.manager.BotConnector;
-import com.dmytrobilokha.xmbt.xmpp.TextMessage;
+import com.dmytrobilokha.xmbt.api.Bot;
+import com.dmytrobilokha.xmbt.api.BotConnector;
+import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.Response;
+import com.dmytrobilokha.xmbt.api.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +30,10 @@ public class EchoBot implements Bot {
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                TextMessage incomingMessage = messageQueueClient.getBlocking();
-                messageQueueClient.sendBlocking(incomingMessage);
+                RequestMessage incomingMessage = messageQueueClient.getBlocking();
+                LOG.debug("Got from queue incoming {}", incomingMessage);
+                messageQueueClient.sendBlocking(new ResponseMessage(
+                        incomingMessage, Response.OK, incomingMessage.getTextMessage().getText()));
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();

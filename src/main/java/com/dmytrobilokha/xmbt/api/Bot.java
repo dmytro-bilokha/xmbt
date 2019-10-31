@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.manager;
+package com.dmytrobilokha.xmbt.api;
 
 import javax.annotation.Nonnull;
 

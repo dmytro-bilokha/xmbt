@@ -1,8 +1,10 @@
 package com.dmytrobilokha.xmbt.command.list;
 
+import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.Response;
+import com.dmytrobilokha.xmbt.api.ResponseMessage;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
-import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 
 import javax.annotation.Nonnull;
 import java.util.stream.Collectors;
@@ -23,10 +25,15 @@ public class ListCommand implements Command {
     }
 
     @Override
-    public void execute(@Nonnull TextMessage commandMessage) throws InterruptedException {
-        botRegistry.enqueueMessageForUser(new TextMessage(commandMessage.getAddress()
+    public void acceptRequest(@Nonnull RequestMessage requestMessage) throws InterruptedException {
+        botRegistry.enqueueResponseMessage(new ResponseMessage(requestMessage, Response.OK
                 , "Have following bots initialized:" + System.lineSeparator()
                 + botRegistry.getBotNames().stream().sorted().collect(Collectors.joining(System.lineSeparator()))));
+    }
+
+    @Override
+    public void acceptResponse(@Nonnull ResponseMessage responseMessage) throws InterruptedException {
+        //This command doesn't send any request, so it doesn't expects any responses
     }
 
 }

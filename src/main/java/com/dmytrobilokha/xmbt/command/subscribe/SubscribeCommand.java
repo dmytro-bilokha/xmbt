@@ -1,10 +1,13 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
+import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.Response;
+import com.dmytrobilokha.xmbt.api.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.TextMessage;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
-import com.dmytrobilokha.xmbt.xmpp.TextMessage;
 
 import javax.annotation.Nonnull;
 import java.time.DayOfWeek;
@@ -68,22 +71,8 @@ public class SubscribeCommand implements Command {
     }
 
     @Override
-    public void tick() throws InterruptedException {
-        var jitMessage = createEmptyJitMessage();
-        var timedMessages = new HashSet<>(scheduledMessages.subSet(earliestMessage, jitMessage));
-        for (ScheduledMessage timedMessage : timedMessages) {
-            botRegistry.enqueueIncomingMessage(timedMessage.getMessage());
-            scheduledMessages.remove(timedMessage);
-            ScheduledMessage nextSchedule = timedMessage.getNext();
-            if (nextSchedule != null) {
-                scheduledMessages.add(nextSchedule);
-            }
-        }
-    }
-
-    @Override
-    public void execute(@Nonnull TextMessage commandMessage) throws InterruptedException {
-        var commandMessageScanner = new Scanner(commandMessage.getText());
+    public void acceptRequest(@Nonnull RequestMessage requestMessage) throws InterruptedException {
+        var commandMessageScanner = new Scanner(requestMessage.getTextMessage().getText());
         try {
             validateCommandName(commandMessageScanner);
             LocalTime scheduleTime = parseScheduleTime(commandMessageScanner); //NOPMD
@@ -101,10 +90,32 @@ public class SubscribeCommand implements Command {
                 DayOfWeek dayOfWeek = parseDayOfWeek(nextToken);
                 daysOfWeek.add(dayOfWeek);
             }
-            scheduleMessage(commandMessage.getAddress(), botName, scheduleTime, daysOfWeek, commandMessageScanner);
-            botRegistry.enqueueMessageForUser(commandMessage.withNewText("You have been subscribed"));
+            scheduleMessage(requestMessage.getTextMessage().getAddress()
+                    , botName, scheduleTime, daysOfWeek, commandMessageScanner);
+            botRegistry.enqueueResponseMessage(
+                    new ResponseMessage(requestMessage, Response.OK, "You have been subscribed"));
         } catch (InvalidUserInputException ex) {
-            botRegistry.enqueueMessageForUser(commandMessage.withNewText(ex.getMessage()));
+            botRegistry.enqueueResponseMessage(
+                    new ResponseMessage(requestMessage, Response.INVALID_COMMAND, ex.getMessage()));
+        }
+    }
+
+    @Override
+    public void acceptResponse(@Nonnull ResponseMessage responseMessage) throws InterruptedException {
+        //TODO: implement validation response handling here
+    }
+
+    @Override
+    public void tick() throws InterruptedException {
+        var jitMessage = createEmptyJitMessage();
+        var timedMessages = new HashSet<>(scheduledMessages.subSet(earliestMessage, jitMessage));
+        for (ScheduledMessage timedMessage : timedMessages) {
+            botRegistry.enqueueMessageFromUser(timedMessage.getMessage());
+            scheduledMessages.remove(timedMessage);
+            ScheduledMessage nextSchedule = timedMessage.getNext();
+            if (nextSchedule != null) {
+                scheduledMessages.add(nextSchedule);
+            }
         }
     }
 

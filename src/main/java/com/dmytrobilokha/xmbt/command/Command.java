@@ -1,6 +1,7 @@
 package com.dmytrobilokha.xmbt.command;
 
-import com.dmytrobilokha.xmbt.xmpp.TextMessage;
+import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.ResponseMessage;
 
 import javax.annotation.Nonnull;
 
@@ -9,7 +10,9 @@ public interface Command {
     @Nonnull
     String getName();
 
-    void execute(@Nonnull TextMessage commandMessage) throws InterruptedException;
+    void acceptRequest(@Nonnull RequestMessage requestMessage) throws InterruptedException;
+
+    void acceptResponse(@Nonnull ResponseMessage responseMessage) throws InterruptedException;
 
     default void tick() throws InterruptedException {
         //By default, do nothing in the main process loop

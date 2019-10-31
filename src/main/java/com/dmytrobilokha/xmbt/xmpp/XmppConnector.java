@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.xmpp;
 
+import com.dmytrobilokha.xmbt.api.TextMessage;
 import com.dmytrobilokha.xmbt.config.ConfigPropertyProducer;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;

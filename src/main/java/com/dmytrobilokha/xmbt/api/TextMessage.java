@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.xmpp;
+package com.dmytrobilokha.xmbt.api;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
