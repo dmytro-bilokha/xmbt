@@ -156,7 +156,9 @@
         <module name="UnusedImports"/>
 
         <!-- Avoid too complex code -->
-        <module name="ClassFanOutComplexity"/>
+        <module name="ClassFanOutComplexity">
+            <property name="excludedPackages" value="java.util, java.util.stream, java.time, java.time.format"/>
+        </module>
         <module name="CyclomaticComplexity"/>
         <module name="JavaNCSS"/>
 

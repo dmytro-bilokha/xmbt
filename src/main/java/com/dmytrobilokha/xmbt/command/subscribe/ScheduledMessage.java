@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
-import com.dmytrobilokha.xmbt.api.TextMessage;
+import com.dmytrobilokha.xmbt.api.RequestMessage;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -14,16 +14,16 @@ public class ScheduledMessage implements Comparable<ScheduledMessage> {
     @Nonnull
     private final LocalDateTime dateTime;
     @Nonnull
-    private final TextMessage message;
+    private final RequestMessage requestMessage;
 
     ScheduledMessage(
             @Nonnull LocalDateTime dateTime
             , @Nonnull Schedule schedule
-            , @Nonnull TextMessage message
+            , @Nonnull RequestMessage requestMessage
     ) {
         this.dateTime = dateTime;
         this.schedule = schedule;
-        this.message = message;
+        this.requestMessage = requestMessage;
     }
 
     @CheckForNull
@@ -32,12 +32,12 @@ public class ScheduledMessage implements Comparable<ScheduledMessage> {
         if (nextDateTime == null) {
             return null;
         }
-        return new ScheduledMessage(nextDateTime, schedule, message);
+        return new ScheduledMessage(nextDateTime, schedule, requestMessage);
     }
 
     @Nonnull
-    TextMessage getMessage() {
-        return message;
+    RequestMessage getRequestMessage() {
+        return requestMessage;
     }
 
     @Override
@@ -46,11 +46,11 @@ public class ScheduledMessage implements Comparable<ScheduledMessage> {
         if (cmp != 0) {
             return cmp;
         }
-        cmp = message.getAddress().compareTo(o.message.getAddress());
+        cmp = requestMessage.getTextMessage().getAddress().compareTo(o.requestMessage.getTextMessage().getAddress());
         if (cmp != 0) {
             return cmp;
         }
-        return message.getText().compareTo(o.message.getText());
+        return requestMessage.getTextMessage().getText().compareTo(o.requestMessage.getTextMessage().getText());
     }
 
     @Override
@@ -63,7 +63,7 @@ public class ScheduledMessage implements Comparable<ScheduledMessage> {
         }
         ScheduledMessage that = (ScheduledMessage) o;
         return dateTime.equals(that.dateTime)
-                && message.equals(that.message);
+                && requestMessage.getTextMessage().equals(that.requestMessage.getTextMessage());
     }
 
     @Override

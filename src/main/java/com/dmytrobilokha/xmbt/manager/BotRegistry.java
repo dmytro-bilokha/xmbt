@@ -56,7 +56,7 @@ public class BotRegistry {
         return fromBotsMessageQueue.poll();
     }
 
-    boolean enqueueRequestMessage(@Nonnull RequestMessage commandMessage) throws InterruptedException {
+    public boolean enqueueRequestMessage(@Nonnull RequestMessage commandMessage) throws InterruptedException {
         BlockingQueue<RequestMessage> botQueue = toBotQueuesMap.get(commandMessage.getReceiver());
         if (botQueue == null) {
             return false;

@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
+import com.dmytrobilokha.xmbt.api.Request;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
@@ -8,6 +9,8 @@ import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.time.DayOfWeek;
@@ -17,9 +20,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Scanner;
 import java.util.TreeSet;
@@ -28,11 +33,13 @@ import java.util.stream.Collectors;
 
 public class SubscribeCommand implements Command {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SubscribeCommand.class);
     private static final String COMMAND_NAME = "subscribe";
     private static final String USAGE = "Usage: " + System.lineSeparator()
             + COMMAND_NAME + " HH:mm [space_separated_days_of_week] "
             + BotManager.BOT_NAME_PREFIX + "botname [message_to_bot...]";
-    private static final TextMessage EMPTY_MESSAGE = new TextMessage("", "");
+    private static final RequestMessage EMPTY_MESSAGE = new RequestMessage(
+            0, "", "", Request.RESPOND, new TextMessage("", ""));
     private static final int ONE = 1;
     private static final Pattern READ_LEAST_OF_SCANNER_PATTERN = Pattern.compile("\\A");
 
@@ -41,6 +48,8 @@ public class SubscribeCommand implements Command {
     @Nonnull
     private final ScheduledMessage earliestMessage;
     @Nonnull
+    private final Map<Long, ScheduledMessage> validationWaitingMessagesById;
+    @Nonnull
     private final NavigableSet<ScheduledMessage> scheduledMessages;
     @Nonnull
     private final FuzzyDictionary<DayOfWeek> dayOfWeekDictionary;
@@ -48,6 +57,7 @@ public class SubscribeCommand implements Command {
     public SubscribeCommand(BotRegistry botRegistry) {
         this.botRegistry = botRegistry;
         this.scheduledMessages = new TreeSet<>();
+        this.validationWaitingMessagesById = new HashMap<>();
         this.earliestMessage = createEmptyJitMessage();
         this.dayOfWeekDictionary = FuzzyDictionary.withLatinLetters();
         for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
@@ -90,10 +100,24 @@ public class SubscribeCommand implements Command {
                 DayOfWeek dayOfWeek = parseDayOfWeek(nextToken);
                 daysOfWeek.add(dayOfWeek);
             }
-            scheduleMessage(requestMessage.getTextMessage().getAddress()
-                    , botName, scheduleTime, daysOfWeek, commandMessageScanner);
-            botRegistry.enqueueResponseMessage(
-                    new ResponseMessage(requestMessage, Response.OK, "You have been subscribed"));
+            var stagingScheduleMessage = createScheduledMessage(
+                    requestMessage
+                    , botName
+                    , scheduleTime
+                    , daysOfWeek
+                    , commandMessageScanner
+            );
+            var validationRequestMessage = new RequestMessage(
+                    stagingScheduleMessage.getRequestMessage().getId()
+                    , getName()
+                    , stagingScheduleMessage.getRequestMessage().getReceiver()
+                    , Request.VALIDATE
+                    , stagingScheduleMessage.getRequestMessage().getTextMessage()
+            );
+            if (!botRegistry.enqueueRequestMessage(validationRequestMessage)) {
+                throw new InvalidUserInputException("Bot with name '" + botName + "' doesn't exist");
+            }
+            validationWaitingMessagesById.put(requestMessage.getId(), stagingScheduleMessage);
         } catch (InvalidUserInputException ex) {
             botRegistry.enqueueResponseMessage(
                     new ResponseMessage(requestMessage, Response.INVALID_COMMAND, ex.getMessage()));
@@ -102,7 +126,22 @@ public class SubscribeCommand implements Command {
 
     @Override
     public void acceptResponse(@Nonnull ResponseMessage responseMessage) throws InterruptedException {
-        //TODO: implement validation response handling here
+        var toBeValidatedScheduledMessage = validationWaitingMessagesById.get(responseMessage.getId());
+        if (toBeValidatedScheduledMessage == null) {
+            LOG.error("Got response non matching any request {}", responseMessage);
+            return;
+        }
+        if (responseMessage.getResponse() == Response.OK) {
+            scheduledMessages.add(toBeValidatedScheduledMessage);
+            validationWaitingMessagesById.remove(responseMessage.getId());
+            botRegistry.enqueueResponseMessage(new ResponseMessage(
+                    toBeValidatedScheduledMessage.getRequestMessage(), Response.OK, "You have been subscribed"));
+            return;
+        }
+        botRegistry.enqueueResponseMessage(new ResponseMessage(
+                toBeValidatedScheduledMessage.getRequestMessage()
+                , responseMessage.getResponse()
+                , responseMessage.getTextMessage().getText()));
     }
 
     @Override
@@ -110,7 +149,7 @@ public class SubscribeCommand implements Command {
         var jitMessage = createEmptyJitMessage();
         var timedMessages = new HashSet<>(scheduledMessages.subSet(earliestMessage, jitMessage));
         for (ScheduledMessage timedMessage : timedMessages) {
-            botRegistry.enqueueMessageFromUser(timedMessage.getMessage());
+            botRegistry.enqueueRequestMessage(timedMessage.getRequestMessage());
             scheduledMessages.remove(timedMessage);
             ScheduledMessage nextSchedule = timedMessage.getNext();
             if (nextSchedule != null) {
@@ -161,8 +200,8 @@ public class SubscribeCommand implements Command {
         return matchingDays.get(0);
     }
 
-    private void scheduleMessage(
-            @Nonnull String userAddress
+    private ScheduledMessage createScheduledMessage(
+            @Nonnull RequestMessage requestMessage
             , @Nonnull String botName
             , @Nonnull LocalTime scheduleTime
             , @Nonnull EnumSet<DayOfWeek> daysOfWeek
@@ -178,10 +217,18 @@ public class SubscribeCommand implements Command {
         }
         String scheduleMessageText = contentScanner.hasNext()
                 ? contentScanner.useDelimiter(READ_LEAST_OF_SCANNER_PATTERN).next() : "";
-        scheduledMessages.add(new ScheduledMessage(
+        var rewrittenRequest = new RequestMessage(
+                requestMessage.getId()
+                , requestMessage.getSender()
+                , botName
+                , requestMessage.getRequest()
+                , new TextMessage(requestMessage.getTextMessage().getAddress(), scheduleMessageText)
+        );
+        return new ScheduledMessage(
                 nextDateTime
                 , messageSchedule
-                , new TextMessage(userAddress, botName + scheduleMessageText)));
+                , rewrittenRequest
+        );
     }
 
     private static class InvalidUserInputException extends Exception {

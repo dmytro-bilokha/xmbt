@@ -88,18 +88,18 @@ public class BotManager {
         return true;
     }
 
-    private void processOutgoingQueue() {
+    private void processOutgoingQueue() throws InterruptedException {
         var messageFromBot = botRegistry.pollMessageFromBots();
         if (messageFromBot == null) {
             return;
         }
         if (ROOT_NAME.equals(messageFromBot.getReceiver())) {
             try {
-                var messageToUser = messageFromBot.getSender().indexOf(BOT_NAME_PREFIX) != 0
-                        ? messageFromBot.getTextMessage()
-                        : messageFromBot.getTextMessage().withNewText(
-                                messageFromBot.getSender() + " says:" + System.lineSeparator()
-                                        + messageFromBot.getTextMessage().getText());
+                var messageToUser = messageFromBot.getSender().indexOf(BOT_NAME_PREFIX) == 0
+                        ? messageFromBot.getTextMessage().withNewText(
+                        messageFromBot.getSender() + " says:" + System.lineSeparator()
+                                + messageFromBot.getTextMessage().getText())
+                        : messageFromBot.getTextMessage();
                 connector.sendMessage(messageToUser);
             } catch (InvalidAddressException ex) {
                 Thread.currentThread().interrupt();
@@ -116,7 +116,7 @@ public class BotManager {
                     , messageFromBot.getReceiver(), messageFromBot);
             return;
         }
-        //TODO: implement command getting response to its request
+        command.acceptResponse(messageFromBot);
     }
 
     private void processIncomingQueue() throws InterruptedException {
