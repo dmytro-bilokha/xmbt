@@ -7,12 +7,12 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Properties;
 
-abstract class AbstractPathProperty extends ConfigProperty {
+public abstract class AbstractPathProperty extends ConfigProperty {
 
     @Nonnull
     private final Path path;
 
-    AbstractPathProperty(@Nonnull String key, @Nonnull Properties allProperties) throws InvalidConfigException {
+    public AbstractPathProperty(@Nonnull String key, @Nonnull Properties allProperties) throws InvalidConfigException {
         super(key, allProperties);
         try {
             path = Path.of(stringValue);

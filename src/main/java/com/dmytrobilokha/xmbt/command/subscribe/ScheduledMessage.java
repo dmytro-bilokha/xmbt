@@ -4,10 +4,11 @@ import com.dmytrobilokha.xmbt.api.RequestMessage;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class ScheduledMessage implements Comparable<ScheduledMessage> {
+public class ScheduledMessage implements Comparable<ScheduledMessage>, Serializable {
 
     @Nonnull
     private final Schedule schedule;

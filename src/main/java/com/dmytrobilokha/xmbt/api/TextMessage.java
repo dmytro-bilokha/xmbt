@@ -1,9 +1,10 @@
 package com.dmytrobilokha.xmbt.api;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TextMessage {
+public class TextMessage implements Serializable {
 
     @Nonnull
     private final String address;

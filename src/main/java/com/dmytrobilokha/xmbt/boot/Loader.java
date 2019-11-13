@@ -11,6 +11,8 @@ import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
+import com.dmytrobilokha.xmbt.persistence.PersistencePathProperty;
+import com.dmytrobilokha.xmbt.persistence.PersistenceService;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ public final class Loader {
 
     private static final List<ConfigPropertyProducer> CONFIGFILE_PROPERTY_PRODUCERS = List.of(
             NsApiKeyProperty::new
+            , PersistencePathProperty::new
     );
 
     @Nonnull
@@ -56,7 +59,13 @@ public final class Loader {
                 fsService, SYSTEM_PROPERTY_PRODUCERS, propertyProducers);
         BotRegistry botRegistry = new BotRegistry(cleaner);
         xmppConnector = new XmppConnector(configService, botRegistry);
-        botManager = new BotManager(xmppConnector, botRegistry, new CommandFactory());
+        botManager = new BotManager(
+                xmppConnector
+                , botRegistry
+                , new CommandFactory()
+                , new PersistenceService(fsService, configService)
+                , cleaner
+        );
     }
 
     public static void main(@Nonnull String[] cliArgs) {

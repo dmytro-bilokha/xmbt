@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
+import com.dmytrobilokha.xmbt.api.Persistable;
 import com.dmytrobilokha.xmbt.api.Request;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
@@ -13,12 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +38,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class SubscribeCommand implements Command {
+public class SubscribeCommand implements Command, Persistable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubscribeCommand.class);
     private static final String COMMAND_NAME = "subscribe";
@@ -229,6 +236,36 @@ public class SubscribeCommand implements Command {
                 , messageSchedule
                 , rewrittenRequest
         );
+    }
+
+    //TODO: add boolean return flag to remove file on fail, make it thread-safe
+    @Override
+    public void save(@Nonnull BufferedOutputStream outputStream) {
+        var messages = new ArrayList<>(scheduledMessages);
+        try (ObjectOutputStream objectStream = new ObjectOutputStream(outputStream)) {
+            objectStream.writeObject(messages);
+        } catch (IOException ex) {
+            LOG.error("Failed to persist the state", ex);
+        }
+    }
+
+    @Override
+    public void load(@Nonnull BufferedInputStream inputStream) {
+        List<ScheduledMessage> messages;
+        try (ObjectInputStream objectStream = new ObjectInputStream(inputStream)) {
+            messages = (List<ScheduledMessage>) objectStream.readObject();
+        } catch (IOException | ClassNotFoundException ex) {
+            LOG.error("Failed to load the state", ex);
+            return;
+        }
+        //TODO: handle outdated messages (reschedule recursives)
+        scheduledMessages.addAll(messages);
+    }
+
+    @Nonnull
+    @Override
+    public String getPersistenceKey() {
+        return "Subscriptions";
     }
 
     private static class InvalidUserInputException extends Exception {

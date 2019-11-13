@@ -2,13 +2,14 @@ package com.dmytrobilokha.xmbt.command.subscribe;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.EnumSet;
 
-public class Schedule {
+public class Schedule implements Serializable {
 
     @Nonnull
     private final LocalTime time;

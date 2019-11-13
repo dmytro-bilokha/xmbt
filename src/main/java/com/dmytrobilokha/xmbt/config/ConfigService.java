@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+//TODO: change implementation, providing all properties upfront isn't very beneficial
 public class ConfigService {
 
     @Nonnull
@@ -47,7 +48,7 @@ public class ConfigService {
         var configFilePath = getProperty(ConfigFilePathProperty.class).getValue();
         var rawProperties = new Properties();
         try {
-            fsService.consumeFile(configFilePath, rawProperties::load);
+            fsService.readFile(configFilePath, rawProperties::load);
         } catch (IOException ex) {
             throw new InitializationException("Failed to read config file '" + configFilePath + "'", ex);
         }

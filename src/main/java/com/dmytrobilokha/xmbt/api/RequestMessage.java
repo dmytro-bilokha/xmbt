@@ -1,8 +1,9 @@
 package com.dmytrobilokha.xmbt.api;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 
-public class RequestMessage {
+public class RequestMessage implements Serializable {
 
     private final long id;
     @Nonnull

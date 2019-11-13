@@ -1,18 +1,22 @@
 package com.dmytrobilokha.xmbt.manager;
 
+import com.dmytrobilokha.xmbt.api.Persistable;
 import com.dmytrobilokha.xmbt.api.Request;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
 import com.dmytrobilokha.xmbt.api.TextMessage;
+import com.dmytrobilokha.xmbt.boot.Cleaner;
 import com.dmytrobilokha.xmbt.bot.echo.EchoBot;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
+import com.dmytrobilokha.xmbt.persistence.PersistenceService;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -31,22 +35,38 @@ public class BotManager {
     @Nonnull
     private final BotRegistry botRegistry;
     @Nonnull
+    private final PersistenceService persistenceService;
+    @Nonnull
     private final Map<String, Command> commandMap;
 
     public BotManager(
             @Nonnull XmppConnector connector
             , @Nonnull BotRegistry botRegistry
             , @Nonnull CommandFactory commandFactory
+            , @Nonnull PersistenceService persistenceService
+            , @Nonnull Cleaner cleaner
     ) {
         this.connector = connector;
         this.botRegistry = botRegistry;
+        this.persistenceService = persistenceService;
         this.commandMap = new HashMap<>();
         for (Command command : commandFactory.produceAll(botRegistry)) {
             commandMap.put(command.getName(), command);
         }
+        cleaner.registerHook(this::dumpCommandStates);
     }
 
     public void go() {
+        for (Command command : commandMap.values()) {
+            if (command instanceof Persistable) {
+                try {
+                    LOG.info("Loading state for '{}'", command);
+                    persistenceService.loadState((Persistable) command);
+                } catch (IOException ex) {
+                    LOG.error("Failed to load state for command '{}'", command, ex);
+                }
+            }
+        }
         boolean connectedOk = connectToMessagingServer();
         if (!connectedOk) {
             return;
@@ -59,7 +79,7 @@ public class BotManager {
                 for (Command command : commandMap.values()) {
                     command.tick();
                 }
-                Thread.sleep(1000L);
+                Thread.sleep(100L);
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -69,6 +89,20 @@ public class BotManager {
         } finally {
             LOG.info("Exiting...");
             connector.disconnect();
+        }
+    }
+
+    //TODO: is this thread-safe??? Make commands map immutable, and control that commands are also safe
+    private void dumpCommandStates() {
+        for (Command command : commandMap.values()) {
+            if (command instanceof Persistable) {
+                try {
+                    LOG.info("Persisting state for '{}'", command);
+                    persistenceService.saveState((Persistable) command);
+                } catch (IOException ex) {
+                    LOG.error("Failed to save state for command '{}'", command, ex);
+                }
+            }
         }
     }
 
