@@ -1,17 +1,12 @@
 package com.dmytrobilokha.xmbt.boot;
 
 import com.dmytrobilokha.xmbt.command.CommandFactory;
-import com.dmytrobilokha.xmbt.config.ConfigPropertyProducer;
 import com.dmytrobilokha.xmbt.config.ConfigService;
-import com.dmytrobilokha.xmbt.config.property.ConfigFilePathProperty;
-import com.dmytrobilokha.xmbt.config.property.LogFilePathProperty;
-import com.dmytrobilokha.xmbt.config.property.LogLevelProperty;
 import com.dmytrobilokha.xmbt.config.property.NsApiKeyProperty;
 import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
-import com.dmytrobilokha.xmbt.persistence.PersistencePathProperty;
 import com.dmytrobilokha.xmbt.persistence.PersistenceService;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
 import org.slf4j.Logger;
@@ -20,24 +15,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class Loader {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
-
-    private static final List<ConfigPropertyProducer> SYSTEM_PROPERTY_PRODUCERS = List.of(
-            ConfigFilePathProperty::new
-            , LogFilePathProperty::new
-            , LogLevelProperty::new
-            , PidFilePathProperty::new
-    );
-
-    private static final List<ConfigPropertyProducer> CONFIGFILE_PROPERTY_PRODUCERS = List.of(
-            NsApiKeyProperty::new
-            , PersistencePathProperty::new
-    );
 
     @Nonnull
     private final Cleaner cleaner;
@@ -53,10 +34,7 @@ public final class Loader {
     private Loader() {
         cleaner = new Cleaner();
         fsService = new FsService();
-        List<ConfigPropertyProducer> propertyProducers = new ArrayList<>(CONFIGFILE_PROPERTY_PRODUCERS);
-        propertyProducers.addAll(XmppConnector.getPropertyProducers());
-        configService = new ConfigService(
-                fsService, SYSTEM_PROPERTY_PRODUCERS, propertyProducers);
+        configService = new ConfigService(fsService);
         BotRegistry botRegistry = new BotRegistry(cleaner);
         xmppConnector = new XmppConnector(configService, botRegistry);
         botManager = new BotManager(
@@ -95,7 +73,11 @@ public final class Loader {
     }
 
     private void go() {
-        botManager.go();
+        try {
+            botManager.go();
+        } catch (RuntimeException ex) {
+            LOG.error("Got unexpected runtime exception, shutting down", ex);
+        }
     }
 
     private void writePidToFile(@Nonnull Path pidFilePath) throws InitializationException {

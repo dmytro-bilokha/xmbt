@@ -4,11 +4,11 @@ import com.dmytrobilokha.xmbt.config.InvalidConfigException;
 import com.dmytrobilokha.xmbt.config.property.ConfigProperty;
 
 import javax.annotation.Nonnull;
-import java.util.Properties;
+import java.util.Map;
 
-class XmppUsernameProperty extends ConfigProperty {
+public class XmppUsernameProperty extends ConfigProperty {
 
-    protected XmppUsernameProperty(@Nonnull Properties allProperties) throws InvalidConfigException {
+    public XmppUsernameProperty(@Nonnull Map<String, String> allProperties) throws InvalidConfigException {
         super("xmpp.username", allProperties);
     }
 

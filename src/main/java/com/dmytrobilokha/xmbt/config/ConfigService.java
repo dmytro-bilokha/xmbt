@@ -7,84 +7,97 @@ import com.dmytrobilokha.xmbt.fs.FsService;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-//TODO: change implementation, providing all properties upfront isn't very beneficial
 public class ConfigService {
 
     @Nonnull
     private final FsService fsService;
     @Nonnull
-    private final Map<Class<? extends ConfigProperty>, ConfigProperty> configMap;
+    private final Map<String, String> rawPropertiesMap;
     @Nonnull
-    private final Collection<ConfigPropertyProducer> systemPropertyProducers;
+    private final Map<Class<? extends ConfigProperty>, ConfigProperty> parsedPropertiesMap;
     @Nonnull
-    private final Collection<ConfigPropertyProducer> configfilePropertyProducers;
+    private final Object lock;
 
-    public ConfigService(
-            @Nonnull FsService fsService
-            , @Nonnull Collection<ConfigPropertyProducer> systemPropertyProducers
-            , @Nonnull Collection<ConfigPropertyProducer> configfilePropertyProducers
-    ) {
+    public ConfigService(@Nonnull FsService fsService) {
         this.fsService = fsService;
-        this.systemPropertyProducers = systemPropertyProducers;
-        this.configfilePropertyProducers = configfilePropertyProducers;
-        this.configMap = new HashMap<>();
+        this.rawPropertiesMap = new HashMap<>();
+        this.parsedPropertiesMap = new HashMap<>();
+        this.lock = new Object();
     }
 
     public void init() throws InitializationException {
-        var systemPropertyErrors = loadConfigProperties(System.getProperties(), systemPropertyProducers);
-        if (!systemPropertyErrors.isEmpty()) {
-            throw new InitializationException("Failed to load command line properties: " + systemPropertyErrors);
-        }
-        if (!configMap.containsKey(ConfigFilePathProperty.class)) {
-            throw new IllegalStateException("Config file path property must be among system properties, but it is not");
-        }
-        var configFilePath = getProperty(ConfigFilePathProperty.class).getValue();
-        var rawProperties = new Properties();
-        try {
-            fsService.readFile(configFilePath, rawProperties::load);
-        } catch (IOException ex) {
-            throw new InitializationException("Failed to read config file '" + configFilePath + "'", ex);
-        }
-        var configPropertyErrors = loadConfigProperties(rawProperties, configfilePropertyProducers);
-        if (!configPropertyErrors.isEmpty()) {
-            throw new InitializationException("Config file contains errors: " + configPropertyErrors);
-        }
-    }
-
-    @Nonnull
-    private List<String> loadConfigProperties(@Nonnull Properties rawProperties
-            , @Nonnull Collection<ConfigPropertyProducer> producers) {
-        List<String> propertyErrors = new ArrayList<>();
-        for (ConfigPropertyProducer propertyProducer : producers) {
+        synchronized (lock) {
+            rawPropertiesMap.clear();
+            parsedPropertiesMap.clear();
+            var systemProperties = System.getProperties();
+            fillRawPropertiesMap(systemProperties);
+            ConfigFilePathProperty configFilePathProperty;
             try {
-                parseConfigProperty(propertyProducer, rawProperties);
+                configFilePathProperty = new ConfigFilePathProperty(rawPropertiesMap);
             } catch (InvalidConfigException ex) {
-                propertyErrors.add(ex.getMessage());
+                throw new InitializationException("Failed to get config file path property", ex);
             }
+            var configFilePath = configFilePathProperty.getValue();
+            var configFileProperties = new Properties();
+            try {
+                fsService.readFile(configFilePath, configFileProperties::load);
+            } catch (IOException ex) {
+                throw new InitializationException("Failed to read config file '" + configFilePath + "'", ex);
+            }
+            fillRawPropertiesMap(configFileProperties);
+            //Fill again, because system properties should override properties from config file
+            fillRawPropertiesMap(systemProperties);
         }
-        return propertyErrors;
     }
 
-    private void parseConfigProperty(@Nonnull ConfigPropertyProducer propertyProducer
-            , @Nonnull Properties rawProperties) throws InvalidConfigException {
-        var configProperty = propertyProducer.produce(rawProperties);
-        configMap.put(configProperty.getClass(), configProperty);
+    private void fillRawPropertiesMap(@Nonnull Properties properties) {
+        for (String propertyKey : properties.stringPropertyNames()) {
+            rawPropertiesMap.put(propertyKey, properties.getProperty(propertyKey));
+        }
+    }
+
+    private <T extends ConfigProperty> T parseAndCacheConfigProperty(
+            @Nonnull Class<T> propertyClass) throws InvalidConfigException {
+        try {
+            Constructor<T> propertyConstructor = propertyClass.getConstructor(Map.class);
+            T configProperty = propertyConstructor.newInstance(rawPropertiesMap);
+            parsedPropertiesMap.put(propertyClass, configProperty);
+            return configProperty;
+        } catch (InstantiationException ex) {
+            throw new InvalidConfigException("Could not parse config property of class '" + propertyClass
+                    + "', because it is of abstract class", ex);
+        } catch (InvocationTargetException ex) {
+            throw new InvalidConfigException("Could not parse config property of class '" + propertyClass
+                    + "', because its constructor has thrown an exception", ex);
+        } catch (NoSuchMethodException ex) {
+            throw new InvalidConfigException("Could not parse config property of class '" + propertyClass
+                    + "', because it has no constructor accepting Map<String, String>", ex);
+        } catch (IllegalAccessException ex) {
+            throw new InvalidConfigException("Could not parse config property of class '" + propertyClass
+                    + "', because its constructor accepting Map<String, String> isn't accessible", ex);
+        }
     }
 
     @Nonnull
     public <T extends ConfigProperty> T getProperty(@Nonnull Class<T> propertyClass) {
-        T property = propertyClass.cast(configMap.get(propertyClass));
-        if (property == null) {
-            throw new IllegalStateException("Requested property '" + propertyClass + "' not found");
+        synchronized (lock) {
+            T property = propertyClass.cast(parsedPropertiesMap.get(propertyClass));
+            if (property != null) {
+                return property;
+            }
+            try {
+                property = parseAndCacheConfigProperty(propertyClass);
+            } catch (InvalidConfigException ex) {
+                throw new IllegalStateException(ex);
+            }
+            return property;
         }
-        return property;
     }
 
 }

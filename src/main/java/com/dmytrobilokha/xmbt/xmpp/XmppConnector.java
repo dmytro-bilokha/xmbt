@@ -1,7 +1,6 @@
 package com.dmytrobilokha.xmbt.xmpp;
 
 import com.dmytrobilokha.xmbt.api.TextMessage;
-import com.dmytrobilokha.xmbt.config.ConfigPropertyProducer;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import com.dmytrobilokha.xmbt.manager.ConnectionException;
@@ -24,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.List;
 
 public class XmppConnector {
 
@@ -40,15 +38,6 @@ public class XmppConnector {
     public XmppConnector(@Nonnull ConfigService configService, @Nonnull BotRegistry botRegistry) {
         this.configService = configService;
         this.botRegistry = botRegistry;
-    }
-
-    @Nonnull
-    public static List<ConfigPropertyProducer> getPropertyProducers() {
-        return List.of(
-                XmppUsernameProperty::new
-                , XmppPasswordProperty::new
-                , XmppServerProperty::new
-        );
     }
 
     public void connect() throws ConnectionException, InterruptedException {

@@ -3,24 +3,21 @@ package com.dmytrobilokha.xmbt.config.property;
 import com.dmytrobilokha.xmbt.config.InvalidConfigException;
 
 import javax.annotation.Nonnull;
-import java.util.Properties;
+import java.util.Map;
 
 public abstract class ConfigProperty {
 
     @Nonnull
     protected final String stringValue;
 
-    protected ConfigProperty(@Nonnull String key, @Nonnull Properties allProperties, @Nonnull String defaultValue) {
-        String valueFromProperties = allProperties.getProperty(key);
-        if (valueFromProperties == null) {
-            this.stringValue = defaultValue;
-            return;
-        }
-        this.stringValue = valueFromProperties;
+    protected ConfigProperty(
+            @Nonnull String key, @Nonnull Map<String, String> allProperties, @Nonnull String defaultValue) {
+        this.stringValue = allProperties.getOrDefault(key, defaultValue);
     }
 
-    protected ConfigProperty(@Nonnull String key, @Nonnull Properties allProperties) throws InvalidConfigException {
-        String valueFromProperties = allProperties.getProperty(key);
+    protected ConfigProperty(
+            @Nonnull String key, @Nonnull Map<String, String> allProperties) throws InvalidConfigException {
+        String valueFromProperties = allProperties.get(key);
         if (valueFromProperties == null || valueFromProperties.isBlank()) {
             throw new InvalidConfigException("Property '" + key + "' is mandatory but its value hasn't been provided");
         }

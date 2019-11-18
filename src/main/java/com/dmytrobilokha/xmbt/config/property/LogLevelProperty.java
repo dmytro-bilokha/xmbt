@@ -3,11 +3,11 @@ package com.dmytrobilokha.xmbt.config.property;
 import ch.qos.logback.classic.Level;
 
 import javax.annotation.Nonnull;
-import java.util.Properties;
+import java.util.Map;
 
 public class LogLevelProperty extends ConfigProperty {
 
-    public LogLevelProperty(@Nonnull Properties allProperties) {
+    public LogLevelProperty(@Nonnull Map<String, String> allProperties) {
         super("log.level", allProperties, "INFO");
     }
 
