@@ -156,7 +156,11 @@
     <!-- Avoid too long classes -->
     <rule ref="category/java/design.xml/ExcessiveClassLength" />
     <!-- Avoid too many imports -->
-    <rule ref="category/java/design.xml/ExcessiveImports" />
+    <rule ref="category/java/design.xml/ExcessiveImports">
+        <properties>
+            <property name="minimum" value="40.0" />
+        </properties>
+    </rule>
     <!-- Avoid too long methods -->
     <rule ref="category/java/design.xml/ExcessiveMethodLength" />
     <!-- Avoid too many method parameters -->
