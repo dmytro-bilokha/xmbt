@@ -6,6 +6,8 @@ import java.util.Objects;
 
 public class TextMessage implements Serializable {
 
+    private static final int JID_SEPARATOR = '/';
+
     @Nonnull
     private final String address;
     @Nonnull
@@ -29,6 +31,23 @@ public class TextMessage implements Serializable {
     @Nonnull
     public String getText() {
         return text;
+    }
+
+    public boolean hasSameAddress(@Nonnull TextMessage o) {
+        int minLength = Math.min(address.length(), o.address.length());
+        for (int i = 0; i < minLength; i++) {
+            int thisCodePoint = address.codePointAt(i);
+            int thatCodePoint = o.address.codePointAt(i);
+            if (thisCodePoint == thatCodePoint) {
+                //XMPP address should be compared without resource part
+                if (thisCodePoint == JID_SEPARATOR) {
+                    return true;
+                }
+            } else {
+                return false;
+            }
+        }
+        return address.length() == o.address.length();
     }
 
     @Override

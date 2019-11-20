@@ -7,7 +7,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.TextStyle;
 import java.util.EnumSet;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class Schedule implements Serializable {
 
@@ -42,6 +45,16 @@ public class Schedule implements Serializable {
             }
         }
         return null;
+    }
+
+    @Nonnull
+    String getDisplayString() {
+        String daysString = dayOfWeeks
+                .stream()
+                .sorted()
+                .map(d -> d.getDisplayName(TextStyle.SHORT, Locale.ENGLISH))
+                .collect(Collectors.joining(" "));
+        return daysString.isEmpty() ? time.toString() : time + " " + daysString;
     }
 
 }

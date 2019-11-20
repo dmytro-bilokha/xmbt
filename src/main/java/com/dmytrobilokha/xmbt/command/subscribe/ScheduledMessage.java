@@ -41,6 +41,13 @@ public class ScheduledMessage implements Comparable<ScheduledMessage>, Serializa
         return requestMessage;
     }
 
+    @Nonnull
+    String getDisplayString() {
+        return schedule.getDisplayString()
+                + " " + requestMessage.getReceiver()
+                + requestMessage.getTextMessage().getText();
+    }
+
     @Override
     public int compareTo(ScheduledMessage o) {
         int cmp = dateTime.compareTo(o.dateTime);

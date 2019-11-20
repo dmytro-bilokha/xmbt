@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -92,6 +93,14 @@ public class SubscribeCommand implements Command, Persistable {
         var commandMessageScanner = new Scanner(requestMessage.getTextMessage().getText());
         try {
             validateCommandName(commandMessageScanner);
+            if (!commandMessageScanner.hasNext()) {
+                botRegistry.enqueueResponseMessage(new ResponseMessage(
+                        requestMessage
+                        , Response.OK
+                        , getUserSubscriptionsText(requestMessage.getTextMessage())
+                ));
+                return;
+            }
             LocalTime scheduleTime = parseScheduleTime(commandMessageScanner); //NOPMD
             if (!commandMessageScanner.hasNext()) {
                 throw new InvalidUserInputException("Missing mandatory botname time parameter. " + USAGE);
@@ -129,6 +138,18 @@ public class SubscribeCommand implements Command, Persistable {
             botRegistry.enqueueResponseMessage(
                     new ResponseMessage(requestMessage, Response.INVALID_COMMAND, ex.getMessage()));
         }
+    }
+
+    @Nonnull
+    private String getUserSubscriptionsText(@Nonnull TextMessage userMessage) {
+        var subscriptions = scheduledMessages
+                .stream()
+                .filter(sm -> sm.getRequestMessage().getTextMessage().hasSameAddress(userMessage))
+                .map(ScheduledMessage::getDisplayString)
+                .collect(Collectors.joining(System.lineSeparator()));
+        var mainMessage = subscriptions.isEmpty() ? "You have no subscriptions yet"
+                : "Your subscriptions: " + System.lineSeparator() + subscriptions;
+        return mainMessage + System.lineSeparator() + USAGE;
     }
 
     @Override
@@ -258,8 +279,10 @@ public class SubscribeCommand implements Command, Persistable {
             LOG.error("Failed to load the state", ex);
             return;
         }
-        //TODO: handle outdated messages (reschedule recursives)
-        scheduledMessages.addAll(messages);
+        messages.stream()
+                .map(ScheduledMessage::getNext)
+                .filter(Objects::nonNull)
+                .forEach(scheduledMessages::add);
     }
 
     @Nonnull
