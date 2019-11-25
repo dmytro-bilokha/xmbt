@@ -18,6 +18,8 @@
         <smack.version>4.3.4</smack.version>
         <mybatis.version>3.5.2</mybatis.version>
         <flyway.version>6.0.1</flyway.version>
+        <mysql.connector.version>8.0.18</mysql.connector.version>
+        <hikari.version>3.4.1</hikari.version>
         <testng.version>7.0.0</testng.version>
         <mockito.version>3.0.0</mockito.version>
         <h2.version>1.4.199</h2.version>
@@ -82,6 +84,16 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
             <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql.connector.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikari.version}</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>

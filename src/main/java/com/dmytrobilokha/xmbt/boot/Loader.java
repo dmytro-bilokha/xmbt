@@ -27,6 +27,8 @@ public final class Loader {
     @Nonnull
     private final ConfigService configService;
     @Nonnull
+    private final PersistenceService persistenceService;
+    @Nonnull
     private final XmppConnector xmppConnector;
     @Nonnull
     private final BotManager botManager;
@@ -35,13 +37,14 @@ public final class Loader {
         cleaner = new Cleaner();
         fsService = new FsService();
         configService = new ConfigService(fsService);
+        persistenceService = new PersistenceService(fsService, configService);
         BotRegistry botRegistry = new BotRegistry(cleaner);
         xmppConnector = new XmppConnector(configService, botRegistry);
         botManager = new BotManager(
                 xmppConnector
                 , botRegistry
                 , new CommandFactory()
-                , new PersistenceService(fsService, configService)
+                , persistenceService
                 , cleaner
         );
     }
@@ -62,6 +65,7 @@ public final class Loader {
             writePidToFile(pidFilePath);
             cleaner.registerFile(pidFilePath);
             cleaner.registerThread(Thread.currentThread());
+            persistenceService.init();
             System.out.println("OK");
             detachFromTerminal();
         } catch (Exception ex) {

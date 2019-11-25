@@ -1,0 +1,9 @@
+CREATE TABLE user_address
+( id BIGINT NOT NULL AUTO_INCREMENT
+, address VARCHAR(120) NOT NULL
+, created_on DATETIME DEFAULT CURRENT_TIMESTAMP
+, modified_on DATETIME DEFAULT NULL
+, CONSTRAINT user_address_pk PRIMARY KEY (id)
+, CONSTRAINT user_address_uq UNIQUE (address)
+);
+
