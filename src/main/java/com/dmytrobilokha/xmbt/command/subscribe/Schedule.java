@@ -19,6 +19,11 @@ public class Schedule implements Serializable {
     @Nonnull
     private final EnumSet<DayOfWeek> dayOfWeeks;
 
+    Schedule(@Nonnull LocalTime time, byte encodedDaysOfWeek) {
+        this.time = time;
+        this.dayOfWeeks = decodeDaysOfWeek(encodedDaysOfWeek);
+    }
+
     Schedule(@Nonnull LocalTime time, @Nonnull EnumSet<DayOfWeek> dayOfWeeks) {
         this.time = time;
         this.dayOfWeeks = dayOfWeeks;
@@ -45,6 +50,35 @@ public class Schedule implements Serializable {
             }
         }
         return null;
+    }
+
+    @Nonnull
+    LocalTime getTime() {
+        return time;
+    }
+
+    private EnumSet<DayOfWeek> decodeDaysOfWeek(byte encoded) {
+        int encodedDaysSchedule = Byte.toUnsignedInt(encoded);
+        DayOfWeek[] allDays = DayOfWeek.values();
+        EnumSet<DayOfWeek> result = EnumSet.noneOf(DayOfWeek.class);
+        for (int i = 0; i < 7; i++) {
+            if ((encodedDaysSchedule & 1) == 1) {
+                result.add(allDays[i]);
+            }
+            encodedDaysSchedule = encodedDaysSchedule >>> 1;
+        }
+        return result;
+    }
+
+    byte getDaysOfWeekEncoded() {
+        var result = 0;
+        for (DayOfWeek day : DayOfWeek.values()) {
+            if (dayOfWeeks.contains(day)) {
+                result = result | 0b10000000;
+            }
+            result = result >>> 1;
+        }
+        return (byte) result;
     }
 
     @Nonnull

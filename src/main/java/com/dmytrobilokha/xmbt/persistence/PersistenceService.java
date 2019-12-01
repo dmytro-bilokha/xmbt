@@ -1,8 +1,8 @@
 package com.dmytrobilokha.xmbt.persistence;
 
-import com.dmytrobilokha.xmbt.api.Persistable;
+import com.dmytrobilokha.xmbt.ThrowingConsumer;
+import com.dmytrobilokha.xmbt.ThrowingFunction;
 import com.dmytrobilokha.xmbt.config.ConfigService;
-import com.dmytrobilokha.xmbt.fs.FsService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -12,24 +12,20 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public class PersistenceService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceService.class);
 
     @Nonnull
-    private final FsService fsService;
-    @Nonnull
     private final ConfigService configService;
     @CheckForNull
     private HikariDataSource dataSource;
 
-    public PersistenceService(@Nonnull FsService fsService, @Nonnull ConfigService configService) {
-        this.fsService = fsService;
+    public PersistenceService(@Nonnull ConfigService configService) {
         this.configService = configService;
     }
 
@@ -53,23 +49,64 @@ public class PersistenceService {
         flyway.migrate();
     }
 
-    @Nonnull
-    private Connection getDbConnection() throws SQLException {
-        return dataSource.getConnection();
-    }
-
-    public void loadState(@Nonnull Persistable persistable) throws IOException {
-        Path persistenceFilePath = configService.getProperty(PersistencePathProperty.class).getValue()
-                .resolve(persistable.getPersistenceKey() + ".state");
-        if (fsService.isRegularFile(persistenceFilePath)) {
-            fsService.inputFromFile(persistenceFilePath, persistable::load);
+    public <R> List<R> executeQuery(
+            @Nonnull ThrowingFunction<Connection, List<R>, SQLException> query) throws SQLException {
+        try (var connection = getDbConnection()) {
+            connection.setReadOnly(true);
+            return query.apply(connection);
         }
     }
 
-    public void saveState(@Nonnull Persistable persistable) throws IOException {
-        Path persistenceFilePath = configService.getProperty(PersistencePathProperty.class).getValue()
-                .resolve(persistable.getPersistenceKey() + ".state");
-        fsService.outputToFile(persistenceFilePath, persistable::save);
+    public void executeAutoCommitted(
+            @Nonnull ThrowingConsumer<Connection, SQLException> operator) throws SQLException {
+        try (var connection = getDbConnection()) {
+            operator.accept(connection);
+        }
+    }
+
+    public void executeTransaction(
+            @Nonnull ThrowingConsumer<Connection, SQLException> transactionConsumer) throws SQLException {
+        Connection connection = null;
+        try {
+            connection = getDbConnection();
+            connection.setAutoCommit(false);
+            transactionConsumer.accept(connection);
+        } catch (SQLException | RuntimeException ex) {
+            rollback(connection);
+            throw ex;
+        } finally {
+            close(connection);
+        }
+    }
+
+    private void rollback(@CheckForNull Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.rollback();
+        } catch (SQLException ex) {
+            LOG.error("Error during trying to rollback a transaction", ex);
+        }
+    }
+
+    private void close(@CheckForNull Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.close();
+        } catch (SQLException ex) {
+            LOG.error("Error during trying to close a connection", ex);
+        }
+    }
+
+    @Nonnull
+    private Connection getDbConnection() throws SQLException {
+        if (dataSource == null) {
+            throw new IllegalStateException("Unable to get a DB connection, the datasource hasn't been initialized");
+        }
+        return dataSource.getConnection();
     }
 
 }

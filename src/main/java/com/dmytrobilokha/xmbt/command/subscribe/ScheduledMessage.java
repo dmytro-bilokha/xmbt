@@ -10,6 +10,8 @@ import java.util.Objects;
 
 public class ScheduledMessage implements Comparable<ScheduledMessage>, Serializable {
 
+    @CheckForNull
+    private final Long id;
     @Nonnull
     private final Schedule schedule;
     @Nonnull
@@ -22,9 +24,34 @@ public class ScheduledMessage implements Comparable<ScheduledMessage>, Serializa
             , @Nonnull Schedule schedule
             , @Nonnull RequestMessage requestMessage
     ) {
+        this(null, dateTime, schedule, requestMessage);
+    }
+
+    ScheduledMessage(
+            @CheckForNull Long id
+            , @Nonnull LocalDateTime dateTime
+            , @Nonnull Schedule schedule
+            , @Nonnull RequestMessage requestMessage
+    ) {
+        this.id = id;
         this.dateTime = dateTime;
         this.schedule = schedule;
         this.requestMessage = requestMessage;
+    }
+
+    @CheckForNull
+    Long getId() {
+        return id;
+    }
+
+    @Nonnull
+    Schedule getSchedule() {
+        return schedule;
+    }
+
+    @Nonnull
+    LocalDateTime getDateTime() {
+        return dateTime;
     }
 
     @CheckForNull

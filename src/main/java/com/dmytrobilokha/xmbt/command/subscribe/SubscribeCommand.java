@@ -1,6 +1,5 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
-import com.dmytrobilokha.xmbt.api.Persistable;
 import com.dmytrobilokha.xmbt.api.Request;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
@@ -13,73 +12,54 @@ import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Scanner;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class SubscribeCommand implements Command, Persistable {
+public class SubscribeCommand implements Command {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubscribeCommand.class);
     private static final String COMMAND_NAME = "subscribe";
     private static final String USAGE = "Usage: " + System.lineSeparator()
             + COMMAND_NAME + " HH:mm [space_separated_days_of_week] "
             + BotManager.BOT_NAME_PREFIX + "botname [message_to_bot...]";
-    private static final RequestMessage EMPTY_MESSAGE = new RequestMessage(
-            0, "", "", Request.RESPOND, new TextMessage("", ""));
     private static final int ONE = 1;
     private static final Pattern READ_LEAST_OF_SCANNER_PATTERN = Pattern.compile("\\A");
+    private static final long CHECK_PAUSE_SECONDS = 30;
 
     @Nonnull
     private final BotRegistry botRegistry;
     @Nonnull
-    private final ScheduledMessage earliestMessage;
+    private final ScheduledMessageDao messageDao;
     @Nonnull
     private final Map<Long, ScheduledMessage> validationWaitingMessagesById;
     @Nonnull
-    private final NavigableSet<ScheduledMessage> scheduledMessages;
-    @Nonnull
     private final FuzzyDictionary<DayOfWeek> dayOfWeekDictionary;
+    @CheckForNull
+    private LocalDateTime lastScheduleCheck;
 
-    public SubscribeCommand(BotRegistry botRegistry) {
+    public SubscribeCommand(@Nonnull BotRegistry botRegistry, @Nonnull ScheduledMessageDao messageDao) {
         this.botRegistry = botRegistry;
-        this.scheduledMessages = new TreeSet<>();
+        this.messageDao = messageDao;
         this.validationWaitingMessagesById = new HashMap<>();
-        this.earliestMessage = createEmptyJitMessage();
         this.dayOfWeekDictionary = FuzzyDictionary.withLatinLetters();
         for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
             dayOfWeekDictionary.put(dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH), dayOfWeek);
         }
-    }
-
-    @Nonnull
-    private ScheduledMessage createEmptyJitMessage() {
-        return new ScheduledMessage(
-                LocalDateTime.now()
-                , new Schedule(LocalTime.MIDNIGHT, EnumSet.noneOf(DayOfWeek.class))
-                , EMPTY_MESSAGE
-        );
     }
 
     @Nonnull
@@ -142,11 +122,16 @@ public class SubscribeCommand implements Command, Persistable {
 
     @Nonnull
     private String getUserSubscriptionsText(@Nonnull TextMessage userMessage) {
-        var subscriptions = scheduledMessages
-                .stream()
-                .filter(sm -> sm.getRequestMessage().getTextMessage().hasSameAddress(userMessage))
-                .map(ScheduledMessage::getDisplayString)
-                .collect(Collectors.joining(System.lineSeparator()));
+        String subscriptions;
+        try {
+            subscriptions = messageDao.fetchSubscriptionsByAddress(userMessage.getAddress())
+                    .stream()
+                    .map(ScheduledMessage::getDisplayString)
+                    .collect(Collectors.joining(System.lineSeparator()));
+        } catch (SQLException ex) {
+            LOG.error("Failed to get subscriptions for request {}", userMessage, ex);
+            return "Failed to fetch your subscriptions because of a DB error";
+        }
         var mainMessage = subscriptions.isEmpty() ? "You have no subscriptions yet"
                 : "Your subscriptions: " + System.lineSeparator() + subscriptions;
         return mainMessage + System.lineSeparator() + USAGE;
@@ -160,7 +145,17 @@ public class SubscribeCommand implements Command, Persistable {
             return;
         }
         if (responseMessage.getResponse() == Response.OK) {
-            scheduledMessages.add(toBeValidatedScheduledMessage);
+            try {
+                messageDao.insert(toBeValidatedScheduledMessage);
+            } catch (SQLException ex) {
+                LOG.error("Failed to persist schedule request {}", toBeValidatedScheduledMessage, ex);
+                botRegistry.enqueueResponseMessage(new ResponseMessage(
+                        toBeValidatedScheduledMessage.getRequestMessage()
+                        , Response.INTERNAL_ERROR
+                        , "Failed to subscribe you because of a DB issue"
+                ));
+                return;
+            }
             validationWaitingMessagesById.remove(responseMessage.getId());
             botRegistry.enqueueResponseMessage(new ResponseMessage(
                     toBeValidatedScheduledMessage.getRequestMessage(), Response.OK, "You have been subscribed"));
@@ -174,14 +169,36 @@ public class SubscribeCommand implements Command, Persistable {
 
     @Override
     public void tick() throws InterruptedException {
-        var jitMessage = createEmptyJitMessage();
-        var timedMessages = new HashSet<>(scheduledMessages.subSet(earliestMessage, jitMessage));
+        var now = LocalDateTime.now();
+        if (lastScheduleCheck != null && lastScheduleCheck.plusSeconds(CHECK_PAUSE_SECONDS).isAfter(now)) {
+            return;
+        }
+        lastScheduleCheck = now;
+        List<ScheduledMessage> timedMessages;
+        try {
+            timedMessages = messageDao.fetchScheduledMessagesBefore(now);
+        } catch (SQLException ex) {
+            LOG.error("Failed to fetch timed-out scheduled messages", ex);
+            return;
+        }
         for (ScheduledMessage timedMessage : timedMessages) {
             botRegistry.enqueueRequestMessage(timedMessage.getRequestMessage());
-            scheduledMessages.remove(timedMessage);
             ScheduledMessage nextSchedule = timedMessage.getNext();
-            if (nextSchedule != null) {
-                scheduledMessages.add(nextSchedule);
+            if (nextSchedule == null) {
+                try {
+                    messageDao.delete(timedMessage);
+                } catch (SQLException ex) {
+                    LOG.error("Failed to delete timed out {}", timedMessage, ex);
+                    return;
+                }
+            } else {
+                try {
+                    messageDao.updateDateTime(timedMessage, nextSchedule.getDateTime());
+                } catch (SQLException ex) {
+                    LOG.error("Failed to set next datetime {} for message {}"
+                            , nextSchedule.getDateTime(), timedMessage, ex);
+                    return;
+                }
             }
         }
     }
@@ -257,38 +274,6 @@ public class SubscribeCommand implements Command, Persistable {
                 , messageSchedule
                 , rewrittenRequest
         );
-    }
-
-    //TODO: add boolean return flag to remove file on fail, make it thread-safe
-    @Override
-    public void save(@Nonnull BufferedOutputStream outputStream) {
-        var messages = new ArrayList<>(scheduledMessages);
-        try (ObjectOutputStream objectStream = new ObjectOutputStream(outputStream)) {
-            objectStream.writeObject(messages);
-        } catch (IOException ex) {
-            LOG.error("Failed to persist the state", ex);
-        }
-    }
-
-    @Override
-    public void load(@Nonnull BufferedInputStream inputStream) {
-        List<ScheduledMessage> messages;
-        try (ObjectInputStream objectStream = new ObjectInputStream(inputStream)) {
-            messages = (List<ScheduledMessage>) objectStream.readObject();
-        } catch (IOException | ClassNotFoundException ex) {
-            LOG.error("Failed to load the state", ex);
-            return;
-        }
-        messages.stream()
-                .map(ScheduledMessage::getNext)
-                .filter(Objects::nonNull)
-                .forEach(scheduledMessages::add);
-    }
-
-    @Nonnull
-    @Override
-    public String getPersistenceKey() {
-        return "Subscriptions";
     }
 
     private static class InvalidUserInputException extends Exception {

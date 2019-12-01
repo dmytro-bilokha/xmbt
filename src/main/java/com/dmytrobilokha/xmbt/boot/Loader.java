@@ -37,15 +37,13 @@ public final class Loader {
         cleaner = new Cleaner();
         fsService = new FsService();
         configService = new ConfigService(fsService);
-        persistenceService = new PersistenceService(fsService, configService);
+        persistenceService = new PersistenceService(configService);
         BotRegistry botRegistry = new BotRegistry(cleaner);
         xmppConnector = new XmppConnector(configService, botRegistry);
         botManager = new BotManager(
                 xmppConnector
                 , botRegistry
-                , new CommandFactory()
-                , persistenceService
-                , cleaner
+                , new CommandFactory(persistenceService)
         );
     }
 

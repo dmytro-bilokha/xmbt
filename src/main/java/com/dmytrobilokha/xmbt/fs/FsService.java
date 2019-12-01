@@ -1,5 +1,7 @@
 package com.dmytrobilokha.xmbt.fs;
 
+import com.dmytrobilokha.xmbt.ThrowingConsumer;
+
 import javax.annotation.Nonnull;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -14,13 +16,15 @@ import java.nio.file.StandardOpenOption;
 
 public class FsService {
 
-    public void readFile(@Nonnull Path file, @Nonnull FsConsumer<Reader> consumer) throws IOException {
+    public void readFile(
+            @Nonnull Path file, @Nonnull ThrowingConsumer<Reader, IOException> consumer) throws IOException {
         try (Reader reader = Files.newBufferedReader(file)) {
             consumer.accept(reader);
         }
     }
 
-    public void writeFile(@Nonnull Path file, @Nonnull FsConsumer<Writer> consumer) throws IOException {
+    public void writeFile(
+            @Nonnull Path file, @Nonnull ThrowingConsumer<Writer, IOException> consumer) throws IOException {
         try (Writer writer = Files.newBufferedWriter(file
                 , StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             consumer.accept(writer);
@@ -28,7 +32,9 @@ public class FsService {
     }
 
     public void inputFromFile(
-            @Nonnull Path file, @Nonnull FsConsumer<BufferedInputStream> consumer) throws IOException {
+            @Nonnull Path file
+            , @Nonnull ThrowingConsumer<BufferedInputStream, IOException> consumer
+    ) throws IOException {
         try (
                 InputStream inputStream = Files.newInputStream(file);
                 BufferedInputStream bufferedIs = new BufferedInputStream(inputStream)
@@ -38,7 +44,9 @@ public class FsService {
     }
 
     public void outputToFile(
-            @Nonnull Path file, @Nonnull FsConsumer<BufferedOutputStream> consumer) throws IOException {
+            @Nonnull Path file
+            , @Nonnull ThrowingConsumer<BufferedOutputStream, IOException> consumer
+    ) throws IOException {
         try (
                 OutputStream outputStream = Files.newOutputStream(file);
                 BufferedOutputStream bufferedOs = new BufferedOutputStream(outputStream)
@@ -50,4 +58,5 @@ public class FsService {
     public boolean isRegularFile(@Nonnull Path file) {
         return Files.isRegularFile(file);
     }
+
 }

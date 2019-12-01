@@ -32,9 +32,19 @@ class AsyncStanzaListener implements StanzaListener {
             LOG.debug("Ignoring stanza message {}, because its body is null", xmppMessage);
             return;
         }
-        TextMessage messageFromUser = new TextMessage(xmppMessage.getFrom().toString(), xmppMessage.getBody());
+        TextMessage messageFromUser = new TextMessage(extractSenderAddress(xmppMessage), xmppMessage.getBody());
         LOG.debug("Putting to queue {}", messageFromUser);
         botRegistry.enqueueMessageFromUser(messageFromUser);
+    }
+
+    @Nonnull
+    private String extractSenderAddress(@Nonnull Message xmppMessage) {
+        String fullSenderAddress = xmppMessage.getFrom().toString();
+        int separatorIndex = fullSenderAddress.indexOf('/');
+        if (separatorIndex < 1) {
+            return fullSenderAddress;
+        }
+        return fullSenderAddress.substring(0, separatorIndex);
     }
 
 }
