@@ -62,7 +62,7 @@ public class Schedule implements Serializable {
         DayOfWeek[] allDays = DayOfWeek.values();
         EnumSet<DayOfWeek> result = EnumSet.noneOf(DayOfWeek.class);
         for (int i = 0; i < 7; i++) {
-            if ((encodedDaysSchedule & 1) == 1) {
+            if ((encodedDaysSchedule & 1) != 0) {
                 result.add(allDays[i]);
             }
             encodedDaysSchedule = encodedDaysSchedule >>> 1;

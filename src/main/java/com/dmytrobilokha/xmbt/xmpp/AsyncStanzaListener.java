@@ -41,7 +41,7 @@ class AsyncStanzaListener implements StanzaListener {
     private String extractSenderAddress(@Nonnull Message xmppMessage) {
         String fullSenderAddress = xmppMessage.getFrom().toString();
         int separatorIndex = fullSenderAddress.indexOf('/');
-        if (separatorIndex < 1) {
+        if (separatorIndex <= 0) {
             return fullSenderAddress;
         }
         return fullSenderAddress.substring(0, separatorIndex);

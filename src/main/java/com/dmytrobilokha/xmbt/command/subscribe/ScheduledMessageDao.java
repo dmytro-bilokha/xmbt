@@ -137,7 +137,7 @@ public class ScheduledMessageDao {
 
     void delete(@Nonnull ScheduledMessage message) throws SQLException {
         Long messageId = message.getId();
-        if (message.getId() == null) {
+        if (messageId == null) {
             return;
         }
         persistenceService.executeAutoCommitted(con -> executeDelete(con, messageId));
@@ -155,7 +155,7 @@ public class ScheduledMessageDao {
     void updateDateTime(
             @Nonnull ScheduledMessage message, @Nonnull LocalDateTime dateTime) throws SQLException {
         Long messageId = message.getId();
-        if (message.getId() == null) {
+        if (messageId == null) {
             throw new IllegalArgumentException("Cannot update entity " + message + " in the DB, it hasn't been saved");
         }
         persistenceService.executeAutoCommitted(con -> executeUpdateNextDateTime(con, messageId, dateTime));
