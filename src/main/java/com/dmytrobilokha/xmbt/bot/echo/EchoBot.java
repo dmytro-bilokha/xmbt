@@ -1,6 +1,5 @@
 package com.dmytrobilokha.xmbt.bot.echo;
 
-import com.dmytrobilokha.xmbt.api.Bot;
 import com.dmytrobilokha.xmbt.api.BotConnector;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
@@ -10,19 +9,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
-public class EchoBot implements Bot {
+class EchoBot implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(EchoBot.class);
 
-    private BotConnector messageQueueClient;
+    @Nonnull
+    private final BotConnector messageQueueClient;
 
-    @Override
-    public String getName() {
-        return "echo";
-    }
-
-    @Override
-    public void setConnector(@Nonnull BotConnector messageQueueClient) {
+    EchoBot(@Nonnull BotConnector messageQueueClient) {
         this.messageQueueClient = messageQueueClient;
     }
 

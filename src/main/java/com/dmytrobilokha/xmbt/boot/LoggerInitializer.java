@@ -18,12 +18,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
-class LoggerInitializer {
+public class LoggerInitializer {
 
     @Nonnull
     private final ConfigService configService;
 
-    LoggerInitializer(@Nonnull ConfigService configService) {
+    public LoggerInitializer(@Nonnull ConfigService configService) {
         this.configService = configService;
     }
 
@@ -39,7 +39,7 @@ class LoggerInitializer {
     }
 
     private void configureRootLogger(@Nonnull LoggerContext loggerContext, @Nonnull FileAppender logFileAppender) {
-        Logger log = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger log = loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         log.detachAndStopAllAppenders();
         log.setAdditive(false);
         log.setLevel(configService.getProperty(LogLevelProperty.class).getValue());
@@ -84,7 +84,7 @@ class LoggerInitializer {
     @Nonnull
     private TriggeringPolicy createTriggeringPolicy() {
         SizeBasedTriggeringPolicy triggeringPolicy = new SizeBasedTriggeringPolicy();
-        triggeringPolicy.setMaxFileSize(new FileSize(10 * 1024 * 1024));
+        triggeringPolicy.setMaxFileSize(new FileSize(10_485_760));
         triggeringPolicy.start();
         return triggeringPolicy;
     }

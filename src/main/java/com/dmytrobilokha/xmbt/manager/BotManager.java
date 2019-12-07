@@ -1,11 +1,11 @@
 package com.dmytrobilokha.xmbt.manager;
 
+import com.dmytrobilokha.xmbt.api.BotFactory;
 import com.dmytrobilokha.xmbt.api.Request;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
 import com.dmytrobilokha.xmbt.api.TextMessage;
-import com.dmytrobilokha.xmbt.bot.echo.EchoBot;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;
@@ -13,9 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class BotManager {
 
@@ -40,18 +41,18 @@ public class BotManager {
     ) {
         this.connector = connector;
         this.botRegistry = botRegistry;
-        this.commandMap = new HashMap<>();
-        for (Command command : commandFactory.produceAll(botRegistry)) {
-            commandMap.put(command.getName(), command);
-        }
+        this.commandMap = commandFactory
+                .produceAll(botRegistry)
+                .stream()
+                .collect(Collectors.toUnmodifiableMap(Command::getName, command -> command));
     }
 
-    public void go() {
+    public void go(@Nonnull Collection<BotFactory> botFactories) {
         boolean connectedOk = connectToMessagingServer();
         if (!connectedOk) {
             return;
         }
-        botRegistry.startBots(new EchoBot());
+        botRegistry.startBots(botFactories);
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 processOutgoingQueue();

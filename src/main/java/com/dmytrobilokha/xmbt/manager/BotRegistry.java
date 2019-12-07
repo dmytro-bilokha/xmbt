@@ -1,7 +1,7 @@
 package com.dmytrobilokha.xmbt.manager;
 
-import com.dmytrobilokha.xmbt.api.Bot;
 import com.dmytrobilokha.xmbt.api.BotConnector;
+import com.dmytrobilokha.xmbt.api.BotFactory;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
 import com.dmytrobilokha.xmbt.api.TextMessage;
@@ -9,6 +9,7 @@ import com.dmytrobilokha.xmbt.boot.Cleaner;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,14 +33,13 @@ public class BotRegistry {
         this.cleaner = cleaner;
     }
 
-    void startBots(@Nonnull Bot... bots) {
-        for (Bot bot : bots) {
-            var botName = BOT_NAME_PREFIX + bot.getName();
+    void startBots(@Nonnull Collection<BotFactory> botFactories) {
+        for (BotFactory botFactory : botFactories) {
+            var botName = BOT_NAME_PREFIX + botFactory.getBotName();
             var toBotQueue = new LinkedBlockingQueue<RequestMessage>();
             toBotQueuesMap.put(botName, toBotQueue);
             var messageQueueClient = new BotConnector(toBotQueue, fromBotsMessageQueue);
-            bot.setConnector(messageQueueClient);
-            var botThread = new Thread(bot);
+            var botThread = new Thread(botFactory.produce(messageQueueClient));
             botThread.setName(botName);
             cleaner.registerThread(botThread);
             botThread.start();

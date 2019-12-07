@@ -23,7 +23,7 @@ public class Cleaner extends Thread {
     @Nonnull
     private final List<Runnable> hooksToExecute = new CopyOnWriteArrayList<>();
 
-    Cleaner() {
+    public Cleaner() {
         this.setName("cleaner-hook");
     }
 

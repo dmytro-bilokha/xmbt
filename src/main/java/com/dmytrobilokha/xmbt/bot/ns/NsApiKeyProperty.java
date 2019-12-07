@@ -1,6 +1,7 @@
-package com.dmytrobilokha.xmbt.config.property;
+package com.dmytrobilokha.xmbt.bot.ns;
 
 import com.dmytrobilokha.xmbt.config.InvalidConfigException;
+import com.dmytrobilokha.xmbt.config.property.ConfigProperty;
 
 import javax.annotation.Nonnull;
 import java.util.Map;

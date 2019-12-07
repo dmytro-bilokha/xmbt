@@ -1,8 +1,10 @@
 package com.dmytrobilokha.xmbt.boot;
 
+import com.dmytrobilokha.xmbt.api.BotFactory;
+import com.dmytrobilokha.xmbt.bot.echo.EchoBotFactory;
+import com.dmytrobilokha.xmbt.bot.ns.NsBotFactory;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.config.ConfigService;
-import com.dmytrobilokha.xmbt.config.property.NsApiKeyProperty;
 import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
@@ -15,36 +17,22 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class Loader {
+
+    private static final List<Class<? extends BotFactory>> BOT_FACTORY_CLASSES = List.of(
+            EchoBotFactory.class, NsBotFactory.class
+    );
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
 
     @Nonnull
-    private final Cleaner cleaner;
-    @Nonnull
-    private final FsService fsService;
-    @Nonnull
-    private final ConfigService configService;
-    @Nonnull
-    private final PersistenceService persistenceService;
-    @Nonnull
-    private final XmppConnector xmppConnector;
-    @Nonnull
-    private final BotManager botManager;
+    private final BeanRegistry beanRegistry;
 
     private Loader() {
-        cleaner = new Cleaner();
-        fsService = new FsService();
-        configService = new ConfigService(fsService);
-        persistenceService = new PersistenceService(configService);
-        BotRegistry botRegistry = new BotRegistry(cleaner);
-        xmppConnector = new XmppConnector(configService, botRegistry);
-        botManager = new BotManager(
-                xmppConnector
-                , botRegistry
-                , new CommandFactory(persistenceService)
-        );
+        beanRegistry = new BeanRegistry();
     }
 
     public static void main(@Nonnull String[] cliArgs) {
@@ -55,34 +43,59 @@ public final class Loader {
 
     private void init() {
         System.out.print("Initializing...");
-        addShutdownHook();
         try {
+            beanRegistry.initServices(
+                    Cleaner.class, FsService.class, ConfigService.class, PersistenceService.class, BotRegistry.class
+                    , XmppConnector.class, CommandFactory.class, BotManager.class, LoggerInitializer.class
+            );
+            addShutdownHook(beanRegistry.getServiceBean(Cleaner.class));
+            var configService = beanRegistry.getServiceBean(ConfigService.class);
             configService.init();
-            new LoggerInitializer(configService).init();
+            beanRegistry.getServiceBean(LoggerInitializer.class).init();
             Path pidFilePath = configService.getProperty(PidFilePathProperty.class).getValue();
-            writePidToFile(pidFilePath);
+            writePidToFile(beanRegistry.getServiceBean(FsService.class), pidFilePath);
+            var cleaner = beanRegistry.getServiceBean(Cleaner.class);
             cleaner.registerFile(pidFilePath);
             cleaner.registerThread(Thread.currentThread());
-            persistenceService.init();
+            beanRegistry.getServiceBean(PersistenceService.class).init();
             System.out.println("OK");
             detachFromTerminal();
-        } catch (Exception ex) {
+        } catch (InitializationException | IOException | RuntimeException ex) {
             System.out.println("FAIL! Check log for details");
             LOG.error("Failed to initialize the service", ex);
             System.exit(1);
         }
-        LOG.info("Api key={}", configService.getProperty(NsApiKeyProperty.class).getStringValue());
+        LOG.info("Initialized");
     }
 
     private void go() {
+        var botFactories = new ArrayList<BotFactory>();
+        for (Class<? extends BotFactory> factoryClass : BOT_FACTORY_CLASSES) {
+            try {
+                var botFactory = beanRegistry.initBean(factoryClass);
+                if (botFactory == null) {
+                    LOG.error("Failed to find all required dependencies to init bot factory {}. "
+                            + "Will proceed without this bot", factoryClass);
+                } else {
+                    botFactories.add(botFactory);
+                }
+            } catch (InitializationException ex) {
+                LOG.error("Failed to init bot factory {}. Will proceed without this bot", factoryClass);
+            }
+        }
+        if (botFactories.isEmpty()) {
+            LOG.error("Failed to initialize any bot factory, shutting down");
+            return;
+        }
         try {
-            botManager.go();
-        } catch (RuntimeException ex) {
-            LOG.error("Got unexpected runtime exception, shutting down", ex);
+            beanRegistry.getServiceBean(BotManager.class).go(botFactories);
+        } catch (InitializationException | RuntimeException ex) {
+            LOG.error("Got unexpected exception, shutting down", ex);
         }
     }
 
-    private void writePidToFile(@Nonnull Path pidFilePath) throws InitializationException {
+    private void writePidToFile(
+            @Nonnull FsService fsService, @Nonnull Path pidFilePath) throws InitializationException {
         try {
             fsService.writeFile(pidFilePath, writer -> writer.write(Long.toString(ProcessHandle.current().pid())));
         } catch (IOException ex) {
@@ -90,7 +103,7 @@ public final class Loader {
         }
     }
 
-    private void addShutdownHook() {
+    private void addShutdownHook(@Nonnull Cleaner cleaner) {
         Runtime.getRuntime().addShutdownHook(cleaner);
     }
 

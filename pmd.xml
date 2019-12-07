@@ -227,7 +227,11 @@
     <!-- Use dedicated catch branch instead of instanceof on exception -->
     <rule ref="category/java/errorprone.xml/AvoidInstanceofChecksInCatchClause" />
     <!-- No magic numbers in conditions -->
-    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition" />
+    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
+        <properties>
+            <property name="ignoreMagicNumbers" value="-1,0,1" />
+        </properties>
+    </rule>
     <!-- Avoid loosing exception info -->
     <rule ref="category/java/errorprone.xml/AvoidLosingExceptionInformation" />
     <!-- Don't use multiple unary operators (!!true) -->
