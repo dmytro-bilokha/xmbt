@@ -2,6 +2,7 @@ package com.dmytrobilokha.xmbt.persistence;
 
 import com.dmytrobilokha.xmbt.ThrowingConsumer;
 import com.dmytrobilokha.xmbt.ThrowingFunction;
+import com.dmytrobilokha.xmbt.boot.Initializable;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -16,7 +17,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-public class PersistenceService {
+public class PersistenceService implements Initializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceService.class);
 
@@ -29,6 +30,7 @@ public class PersistenceService {
         this.configService = configService;
     }
 
+    @Override
     public void init() {
         LOG.info("Initializing DB connection pool");
         var dbPoolConfig = new HikariConfig();

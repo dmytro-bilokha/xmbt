@@ -22,6 +22,11 @@ import java.util.List;
 
 public final class Loader {
 
+    private static final List<Class> SERVICE_CLASSES = List.of(
+            Cleaner.class, FsService.class, ConfigService.class, LoggerInitializer.class, PersistenceService.class
+            , BotRegistry.class, XmppConnector.class, CommandFactory.class, BotManager.class
+    );
+
     private static final List<Class<? extends BotFactory>> BOT_FACTORY_CLASSES = List.of(
             EchoBotFactory.class, NsBotFactory.class
     );
@@ -44,20 +49,14 @@ public final class Loader {
     private void init() {
         System.out.print("Initializing...");
         try {
-            beanRegistry.initServices(
-                    Cleaner.class, FsService.class, ConfigService.class, PersistenceService.class, BotRegistry.class
-                    , XmppConnector.class, CommandFactory.class, BotManager.class, LoggerInitializer.class
-            );
+            beanRegistry.initServices(SERVICE_CLASSES);
             addShutdownHook(beanRegistry.getServiceBean(Cleaner.class));
             var configService = beanRegistry.getServiceBean(ConfigService.class);
-            configService.init();
-            beanRegistry.getServiceBean(LoggerInitializer.class).init();
             Path pidFilePath = configService.getProperty(PidFilePathProperty.class).getValue();
             writePidToFile(beanRegistry.getServiceBean(FsService.class), pidFilePath);
             var cleaner = beanRegistry.getServiceBean(Cleaner.class);
             cleaner.registerFile(pidFilePath);
             cleaner.registerThread(Thread.currentThread());
-            beanRegistry.getServiceBean(PersistenceService.class).init();
             System.out.println("OK");
             detachFromTerminal();
         } catch (InitializationException | IOException | RuntimeException ex) {

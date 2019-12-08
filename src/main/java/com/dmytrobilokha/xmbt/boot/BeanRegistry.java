@@ -5,12 +5,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @NotThreadSafe
 class BeanRegistry {
@@ -25,8 +24,8 @@ class BeanRegistry {
         }
     }
 
-    void initServices(Class... serviceClasses) throws InitializationException {
-        Set<Class> classes = new HashSet<>(Arrays.asList(serviceClasses));
+    void initServices(List<Class> serviceClasses) throws InitializationException {
+        var classes = new HashSet<>(serviceClasses);
         boolean initialized;
         do {
             initialized = false;
@@ -43,6 +42,11 @@ class BeanRegistry {
         if (!classes.isEmpty()) {
             throw new InitializationException("Failed to initialize beans: " + classes
                     + ", because of dependency issues");
+        }
+        for (Class serviceClass : serviceClasses) {
+            if (Initializable.class.isAssignableFrom(serviceClass)) {
+                ((Initializable) servicesMap.get(serviceClass)).init();
+            }
         }
     }
 

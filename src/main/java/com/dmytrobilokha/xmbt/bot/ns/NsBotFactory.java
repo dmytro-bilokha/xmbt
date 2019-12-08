@@ -6,6 +6,7 @@ import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.dmytrobilokha.xmbt.persistence.PersistenceService;
 
 import javax.annotation.Nonnull;
+import java.net.http.HttpClient;
 
 public class NsBotFactory implements BotFactory {
 
@@ -31,7 +32,8 @@ public class NsBotFactory implements BotFactory {
     @Override
     @Nonnull
     public NsBot produce(@Nonnull BotConnector connector) {
-        return new NsBot(connector, persistenceService, configService);
+        NsApiClient apiClient = new NsApiClient(configService, HttpClient.newHttpClient());
+        return new NsBot(connector, persistenceService, apiClient);
     }
 
 }

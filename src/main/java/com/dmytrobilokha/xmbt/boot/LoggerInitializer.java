@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
-public class LoggerInitializer {
+public class LoggerInitializer implements Initializable {
 
     @Nonnull
     private final ConfigService configService;
@@ -27,7 +27,8 @@ public class LoggerInitializer {
         this.configService = configService;
     }
 
-    void init() {
+    @Override
+    public void init() {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder logEncoder = createLayoutEncoder(loggerContext);
         RollingFileAppender logFileAppender = createFileAppender(loggerContext, logEncoder);

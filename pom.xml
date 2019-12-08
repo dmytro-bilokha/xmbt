@@ -16,7 +16,6 @@
         <yasson.version>1.0.5</yasson.version>
         <javax.json.version>1.1.4</javax.json.version>
         <smack.version>4.3.4</smack.version>
-        <mybatis.version>3.5.2</mybatis.version>
         <flyway.version>6.0.1</flyway.version>
         <mysql.connector.version>8.0.18</mysql.connector.version>
         <hikari.version>3.4.1</hikari.version>
@@ -74,11 +73,6 @@
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-java7</artifactId>
             <version>${smack.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>${mybatis.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>

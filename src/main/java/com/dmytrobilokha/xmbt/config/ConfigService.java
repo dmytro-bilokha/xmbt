@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.config;
 
+import com.dmytrobilokha.xmbt.boot.Initializable;
 import com.dmytrobilokha.xmbt.boot.InitializationException;
 import com.dmytrobilokha.xmbt.config.property.ConfigFilePathProperty;
 import com.dmytrobilokha.xmbt.config.property.ConfigProperty;
@@ -13,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class ConfigService {
+public class ConfigService implements Initializable {
 
     @Nonnull
     private final FsService fsService;
@@ -31,6 +32,7 @@ public class ConfigService {
         this.lock = new Object();
     }
 
+    @Override
     public void init() throws InitializationException {
         synchronized (lock) {
             rawPropertiesMap.clear();
