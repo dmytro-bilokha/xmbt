@@ -9,7 +9,9 @@ import java.util.stream.Collectors;
 
 public class FuzzyDictionary<T> {
 
+    @Nonnull
     private final int[] alphabet;
+    @Nonnull
     private final List<Phrase<T>> dictionaryStore;
 
     private FuzzyDictionary(@Nonnull String alphabetString) {
@@ -32,6 +34,10 @@ public class FuzzyDictionary<T> {
                 .filter(p -> p.matches(fuzzy))
                 .map(p -> p.phraseObject)
                 .collect(Collectors.toList());
+    }
+
+    public void clear() {
+        dictionaryStore.clear();
     }
 
     private class Phrase<T> {

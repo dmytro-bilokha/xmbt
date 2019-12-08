@@ -11,3 +11,10 @@ CREATE TABLE scheduled_message
 , CONSTRAINT scheduled_message_pk PRIMARY KEY (id)
 );
 
+CREATE TABLE ns_train_station
+( eva_code BIGINT NOT NULL
+, code VARCHAR(12) NOT NULL
+, name VARCHAR(60) NOT NULL
+, CONSTRAINT ns_train_station_pk PRIMARY KEY (eva_code, code)
+);
+

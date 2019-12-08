@@ -4,11 +4,13 @@ import com.dmytrobilokha.xmbt.api.BotConnector;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
-import com.dmytrobilokha.xmbt.persistence.PersistenceService;
+import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.sql.SQLException;
+import java.util.Collection;
 
 class NsBot implements Runnable {
 
@@ -17,33 +19,37 @@ class NsBot implements Runnable {
     @Nonnull
     private final BotConnector messageQueueClient;
     @Nonnull
-    private final PersistenceService persistenceService;
+    private final NsTrainStationDao dao;
     @Nonnull
     private final NsApiClient apiClient;
+    @Nonnull
+    private final FuzzyDictionary<NsTrainStation> stationDictionary;
 
     NsBot(
             @Nonnull BotConnector messageQueueClient
-            , @Nonnull PersistenceService persistenceService
+            , @Nonnull NsTrainStationDao dao
             , @Nonnull NsApiClient apiClient
     ) {
         this.messageQueueClient = messageQueueClient;
-        this.persistenceService = persistenceService;
+        this.dao = dao;
         this.apiClient = apiClient;
+        this.stationDictionary = FuzzyDictionary.withLatinLetters();
     }
 
     @Override
     public void run() {
+        initStationDictionary();
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 RequestMessage incomingMessage = messageQueueClient.getBlocking();
                 LOG.debug("Got from queue incoming {}", incomingMessage);
-                if (incomingMessage.getTextMessage().getText().contains("sync")) {
-                    syncStations();
-                    messageQueueClient.send(new ResponseMessage(
-                            incomingMessage, Response.OK, "The station list has been synchronized"));
+                var messageText = incomingMessage.getTextMessage().getText().strip();
+                if (messageText.contains("sync")) {
+                    syncStations(incomingMessage);
                 } else {
-                    messageQueueClient.send(new ResponseMessage(
-                            incomingMessage, Response.OK, "Unrecognizable command message"));
+                    var matchingStations = stationDictionary.get(messageText);
+                    sendResponse(incomingMessage, "Stations matching your request '" + messageText + "': "
+                            + matchingStations);
                 }
             }
         } catch (InterruptedException ex) {
@@ -54,11 +60,37 @@ class NsBot implements Runnable {
         }
     }
 
-    private void syncStations() throws InterruptedException {
+    private void initStationDictionary() {
         try {
-            apiClient.fetchAllNlStations();
+            var stations = dao.fetchAll();
+            refreshStationDictionary(stations);
+        } catch (SQLException ex) {
+            LOG.error("Failed to read the stations list. Dictionary won't be initialized", ex);
+        }
+    }
+
+    private void refreshStationDictionary(@Nonnull Collection<NsTrainStation> stations) {
+        stationDictionary.clear();
+        stations.forEach(station -> stationDictionary.put(station.getName(), station));
+    }
+
+    private void sendResponse(@Nonnull RequestMessage request, @Nonnull String responseText) {
+        messageQueueClient.send(new ResponseMessage(
+                request, Response.OK, responseText));
+    }
+
+    private void syncStations(@Nonnull RequestMessage incomingRequest) throws InterruptedException {
+        try {
+            var stations = apiClient.fetchAllNlStations();
+            dao.overwriteAll(stations);
+            refreshStationDictionary(stations);
+            sendResponse(incomingRequest, "The station list has been synchronized");
         } catch (NsApiException ex) {
-            LOG.error("Failed to sync stations", ex);
+            LOG.error("Failed to fetch stations to sync", ex);
+            sendResponse(incomingRequest, "Failed to synchronize stations because of API issue");
+        } catch (SQLException ex) {
+            LOG.error("Failed to update stations in the DB", ex);
+            sendResponse(incomingRequest, "Failed to synchronize stations because of internal DB issue");
         }
     }
 

@@ -75,6 +75,7 @@ public class ScheduledMessageDao {
                 insertStatement.executeUpdate();
             }
         }
+        connection.commit();
     }
 
     @Nonnull

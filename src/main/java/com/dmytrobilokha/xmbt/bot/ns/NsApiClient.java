@@ -64,6 +64,11 @@ class NsApiClient {
             LOG.warn("Got null instead of EVA code for {}, the station will be skipped", dto);
             return null;
         }
+        var code = dto.getCode();
+        if (code == null) {
+            LOG.warn("Got null instead of code for {}, the station will be skipped", dto);
+            return null;
+        }
         var names = dto.getNames();
         if (names == null) {
             LOG.warn("Got null instead of names object for {}, the station will be skipped", dto);
@@ -74,13 +79,14 @@ class NsApiClient {
             LOG.warn("Got null instead of full name for {}, the station will be skipped", dto);
             return null;
         }
-        return new NsTrainStation(evaCode, name);
+        return new NsTrainStation(evaCode, code, name);
     }
 
     private <T> T getDataFromApi(
             @Nonnull String relativeUrl, @Nonnull Class<T> responseClass) throws InterruptedException, NsApiException {
         String apiKey = configService.getProperty(NsApiKeyProperty.class).getStringValue();
         String fullApiUrl = configService.getProperty(NsApiUrlProperty.class).getStringValue() + relativeUrl;
+        LOG.debug("Going to get data from the endpoint '{}'", fullApiUrl);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(fullApiUrl))
                 .header("Ocp-Apim-Subscription-Key", apiKey)
@@ -99,7 +105,7 @@ class NsApiClient {
             throw new NsApiException("Got bad response code '" + response.statusCode()
                     + "' from the NS API url: '" + fullApiUrl + "'. Response body: '" + responseString + "'");
         }
-        LOG.debug("Got response from the stations endpoint: '{}'", responseString);
+        LOG.debug("Got response from the endpoint: '{}'", responseString);
         try {
             T convertedResponse = jsonb.fromJson(responseString, responseClass);
             LOG.debug("Converted response to JSON: '{}'", convertedResponse);

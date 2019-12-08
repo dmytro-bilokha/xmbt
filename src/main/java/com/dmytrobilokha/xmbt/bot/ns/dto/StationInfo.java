@@ -14,6 +14,8 @@ public class StationInfo {
     @JsonbProperty("EVACode")
     @CheckForNull
     private Long evaCode;
+    @CheckForNull
+    private String code;
 
     @CheckForNull
     public StationNames getNames() {
@@ -42,12 +44,22 @@ public class StationInfo {
         this.evaCode = evaCode;
     }
 
+    @CheckForNull
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(@CheckForNull String code) {
+        this.code = code;
+    }
+
     @Override
     public String toString() {
         return "StationInfo{"
                 + "names=" + names
                 + ", countryCode='" + countryCode + '\''
                 + ", evaCode=" + evaCode
+                + ", code='" + code + '\''
                 + '}';
     }
 
