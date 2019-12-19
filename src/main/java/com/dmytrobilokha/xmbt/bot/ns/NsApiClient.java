@@ -1,7 +1,11 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
-import com.dmytrobilokha.xmbt.bot.ns.dto.StationInfo;
-import com.dmytrobilokha.xmbt.bot.ns.dto.StationsPayload;
+import com.dmytrobilokha.xmbt.bot.ns.dto.StationInfoDto;
+import com.dmytrobilokha.xmbt.bot.ns.dto.StationsPayloadDto;
+import com.dmytrobilokha.xmbt.bot.ns.dto.TripInfoDto;
+import com.dmytrobilokha.xmbt.bot.ns.dto.TripLegDto;
+import com.dmytrobilokha.xmbt.bot.ns.dto.TripStationDto;
+import com.dmytrobilokha.xmbt.bot.ns.dto.TripsPayloadDto;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,7 +35,9 @@ import java.util.stream.Collectors;
 class NsApiClient {
 
     private static final String STATIONS_ENDPOINT = "/reisinformatie-api/api/v2/stations";
+    private static final String TRIPS_ENDPOINT = "/reisinformatie-api/api/v3/trips";
     private static final Logger LOG = LoggerFactory.getLogger(NsApiClient.class);
+    private static final ZoneId DEFAULT_TIMEZONE_ID = ZoneId.of("Europe/Amsterdam");
 
     @Nonnull
     private final ConfigService configService;
@@ -43,12 +52,17 @@ class NsApiClient {
         this.jsonb = JsonbBuilder.create();
     }
 
+    @Nonnull
     List<NsTrainStation> fetchAllNlStations() throws InterruptedException, NsApiException {
-        var stationsPayload = getDataFromApi(STATIONS_ENDPOINT, StationsPayload.class);
+        var stationsPayload = getDataFromApi(STATIONS_ENDPOINT, StationsPayloadDto.class);
+        if (stationsPayload == null || stationsPayload.getPayload() == null) {
+            throw new NsApiException("Got invalid response from stations info NS API");
+        }
         var stations = stationsPayload.getPayload()
                 .stream()
+                .filter(Objects::nonNull)
                 .filter(stationInfo -> "NL".equals(stationInfo.getCountryCode()))
-                .map(this::mapFromDto)
+                .map(this::mapNsTrainStation)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (stations.isEmpty()) {
@@ -58,7 +72,7 @@ class NsApiClient {
     }
 
     @CheckForNull
-    private NsTrainStation mapFromDto(@Nonnull StationInfo dto) {
+    private NsTrainStation mapNsTrainStation(@Nonnull StationInfoDto dto) {
         var evaCode = dto.getEvaCode();
         if (evaCode == null) {
             LOG.warn("Got null instead of EVA code for {}, the station will be skipped", dto);
@@ -82,6 +96,89 @@ class NsApiClient {
         return new NsTrainStation(evaCode, code, name);
     }
 
+    @Nonnull
+    List<List<TripLeg>> fetchTripPlans(
+            @Nonnull NsTrainStation origin
+            , @Nonnull NsTrainStation destination
+    ) throws InterruptedException, NsApiException {
+        var queryUrl = TRIPS_ENDPOINT
+                + "?originEVACode=" + origin.getEvaCode()
+                + "&destinationEVACode=" + destination.getEvaCode();
+        var tripsPayload = getDataFromApi(queryUrl, TripsPayloadDto.class);
+        return mapTrips(tripsPayload);
+    }
+
+    @Nonnull
+    private List<List<TripLeg>> mapTrips(@CheckForNull TripsPayloadDto tripsPayload) throws NsApiException {
+        if (tripsPayload == null || tripsPayload.getTrips() == null || tripsPayload.getTrips().isEmpty()) {
+            throw new NsApiException("Got invalid response from route planning NS API with no trips: " + tripsPayload);
+        }
+        var now = ZonedDateTime.now().withZoneSameInstant(DEFAULT_TIMEZONE_ID).toLocalDateTime();
+        return tripsPayload.getTrips()
+                .stream()
+                .filter(Objects::nonNull)
+                .map(this::mapTripInfo)
+                .filter(Objects::nonNull)
+                .filter(legsList -> !legsList.isEmpty())
+                .filter(legsList -> now.isBefore(legsList.get(0).getOrigin().getDateTime()))
+                .sorted(this::compareTripPlans)
+                .collect(Collectors.toList());
+    }
+
+    private int compareTripPlans(@Nonnull List<TripLeg> planA, @Nonnull List<TripLeg> planB) {
+        //First priority in sorting: earlier arrivals first
+        int result = planA.get(planA.size() - 1).getDestination().getDateTime()
+                .compareTo(planB.get(planB.size() - 1).getDestination().getDateTime());
+        if (result != 0) {
+            return result;
+        }
+        //Second priority in sorting: less changes first
+        result = planA.size() - planB.size();
+        if (result != 0) {
+            return result;
+        }
+        //Third priority in sorting: later departure first
+        return planB.get(0).getOrigin().getDateTime()
+                .compareTo(planA.get(0).getOrigin().getDateTime());
+    }
+
+    @CheckForNull
+    private List<TripLeg> mapTripInfo(@Nonnull TripInfoDto tripInfo) {
+        var legDtos = tripInfo.getLegs();
+        if (legDtos == null || legDtos.isEmpty()) {
+            LOG.error("Got invalid trip info response with no legs: {}", tripInfo);
+            return null;
+        }
+        var tripLegs = new ArrayList<TripLeg>();
+        for (TripLegDto dto : legDtos) {
+            var origin = mapTripStation(dto.getOrigin());
+            var destination = mapTripStation(dto.getDestination());
+            if (origin == null || destination == null) {
+                LOG.error("Got invalid trip leg: {}", dto);
+                return null;
+            }
+            tripLegs.add(new TripLeg(origin, destination));
+        }
+        return tripLegs;
+    }
+
+    @CheckForNull
+    private TripStation mapTripStation(@CheckForNull TripStationDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        var zonedDateTime = dto.getActualDateTime() == null ? dto.getPlannedDateTime() : dto.getActualDateTime();
+        if (zonedDateTime == null) {
+            return null;
+        }
+        var name = dto.getName() == null ? "?" : dto.getName();
+        var track = dto.getPlannedTrack() == null ? "?" : dto.getPlannedTrack();
+        // If we are interested in the NS API, probably, we are in the Amsterdam timezone
+        var localDateTime = zonedDateTime.withZoneSameInstant(DEFAULT_TIMEZONE_ID).toLocalDateTime();
+        return new TripStation(name, track, localDateTime);
+    }
+
+    @CheckForNull
     private <T> T getDataFromApi(
             @Nonnull String relativeUrl, @Nonnull Class<T> responseClass) throws InterruptedException, NsApiException {
         String apiKey = configService.getProperty(NsApiKeyProperty.class).getStringValue();

@@ -3,7 +3,7 @@ package com.dmytrobilokha.xmbt.bot.ns.dto;
 import javax.annotation.CheckForNull;
 import javax.json.bind.annotation.JsonbProperty;
 
-public class StationNames {
+public class StationNamesDto {
 
     @JsonbProperty("lang")
     @CheckForNull
@@ -44,7 +44,7 @@ public class StationNames {
 
     @Override
     public String toString() {
-        return "StationNames{"
+        return "StationNamesDto{"
                 + "full='" + full + '\''
                 + ", medium='" + medium + '\''
                 + ", brief='" + brief + '\''

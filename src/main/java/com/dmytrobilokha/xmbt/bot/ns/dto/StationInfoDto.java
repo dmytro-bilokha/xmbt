@@ -3,11 +3,11 @@ package com.dmytrobilokha.xmbt.bot.ns.dto;
 import javax.annotation.CheckForNull;
 import javax.json.bind.annotation.JsonbProperty;
 
-public class StationInfo {
+public class StationInfoDto {
 
     @JsonbProperty("namen")
     @CheckForNull
-    private StationNames names;
+    private StationNamesDto names;
     @JsonbProperty("land")
     @CheckForNull
     private String countryCode;
@@ -18,11 +18,11 @@ public class StationInfo {
     private String code;
 
     @CheckForNull
-    public StationNames getNames() {
+    public StationNamesDto getNames() {
         return names;
     }
 
-    public void setNames(@CheckForNull StationNames names) {
+    public void setNames(@CheckForNull StationNamesDto names) {
         this.names = names;
     }
 
@@ -55,7 +55,7 @@ public class StationInfo {
 
     @Override
     public String toString() {
-        return "StationInfo{"
+        return "StationInfoDto{"
                 + "names=" + names
                 + ", countryCode='" + countryCode + '\''
                 + ", evaCode=" + evaCode
