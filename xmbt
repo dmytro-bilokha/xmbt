@@ -1,0 +1,100 @@
+#!/bin/sh
+
+# PROVIDE: xmbt
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# xmbt_enable (bool):
+#   Set to NO by default.
+#   Set it to YES to enable payara. 
+#
+# xmbt_java_home (string):
+#   Used to set JAVA_HOME (optional).
+#
+# xmbt_java_opts (string):
+#   Used to set JAVA_OPTS (optional).
+#
+# xmbt_user (string):
+#   User to run xmbt (optional).
+#
+# xmbt_log_level (string):
+#   Logging verbosity level: DEBUG, INFO, WARN, ERROR (optional).
+#
+# xmbt_config_file (string):
+#   Config file location (optional).
+#
+# xmbt_log_dir (string):
+#   Location of the logs directory (optional).
+#
+
+. /etc/rc.subr
+
+name="xmbt"
+rcvar="${name}_enable"
+
+load_rc_config ${name}
+
+: ${xmbt_enable:="NO"}
+: ${xmbt_java_home=""}
+: ${xmbt_java_opts=""}
+: ${xmbt_user="xmbt"}
+: ${xmbt_log_level="INFO"}
+: ${xmbt_config_file="/usr/local/etc/xmbt.conf"}
+: ${xmbt_log_dir="/var/log/xmbt"}
+
+xmbt_log_file="${xmbt_log_dir}/xmbt.log"
+xmbt_pid_file="/var/run/xmbt.pid"
+xmbt_superviser_pid_file="/var/run/xmbt_superviser.pid"
+
+if [ ! -z ${xmbt_java_home} ] ; then
+  export JAVA_HOME=${xmbt_java_home}
+else
+  export JAVA_HOME=/usr/local/openjdk11
+fi
+
+export PATH=${JAVA_HOME}/bin:${PATH}
+export JAVA_OPTS=${xmbt_java_opts}
+
+required_files="${xmbt_config_file}"
+required_dirs="${xmbt_log_dir}"
+
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+status_cmd="${name}_status"
+
+extra_commands="status"
+
+xmbt_start() {
+    daemon -o "${xmbt_log_dir}/xmbt.out" -p "${xmbt_pid_file}" -P "${xmbt_superviser_pid_file}" -u "${xmbt_user}"\
+        java -Dconfig.file="${xmbt_config_file}" -Dlog.file="${xmbt_log_file}" \
+         -Dlog.level="${xmbt_log_level}" -jar /usr/local/xmbt/xmbt.jar
+    return $?
+}
+
+xmbt_stop() {
+    if [ -f "${xmbt_superviser_pid_file}" ]; then
+        kill `cat "${xmbt_superviser_pid_file}"`
+        return $?
+    fi
+    warn "Superviser PID file ${xmbt_superviser_pid_file} does not exists, unable to stop the service"
+    return 1
+}
+
+xmbt_status() {
+    if [ -f "${xmbt_superviser_pid_file}" ]; then
+        echo "XMBT Superviser is running"
+    else
+        echo "XMBT Superviser is not running"
+    fi
+    if [ -f "${xmbt_pid_file}" ]; then
+        echo "XMBT Daemon is running"
+    else
+        echo "XMBT Daemon is not running"
+    fi
+    return 0
+}
+
+run_rc_command "$1"
