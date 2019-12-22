@@ -22,6 +22,8 @@ public class FuzzyDictionaryTest {
                 , {List.of("q1uit", "e xit "), "13i42", List.of("q1uit", "e xit ")}
                 , {List.of("quit", "exit"), "itx", List.of()}
                 , {List.of("quit", "exit"), "ti", List.of()}
+                , {List.of("Maastricht", "Maastricht Noord"), "Maastricht", List.of("Maastricht")}
+                , {List.of("Maastricht", "Maastricht Noord"), "maastricht", List.of("Maastricht")}
         };
     }
 
@@ -29,7 +31,7 @@ public class FuzzyDictionaryTest {
     public void testDictionarySearchWithLatinChars(List<String> phrases, String lookupString, List<String> result) {
         FuzzyDictionary<String> dictionary = FuzzyDictionary.withLatinLetters();
         phrases.forEach(phrase -> dictionary.put(phrase, phrase));
-        Assert.assertEquals(result, dictionary.get(lookupString));
+        Assert.assertEquals(dictionary.get(lookupString), result);
     }
 
 }
