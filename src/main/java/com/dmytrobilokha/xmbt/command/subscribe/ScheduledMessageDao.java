@@ -45,7 +45,7 @@ public class ScheduledMessageDao {
     }
 
     void insert(@Nonnull ScheduledMessage message) throws SQLException {
-        persistenceService.executeAutoCommitted(con -> executeInsert(con, List.of(message)));
+        persistenceService.executeTransaction(con -> executeInsert(con, List.of(message)));
     }
 
     private void executeInsert(
