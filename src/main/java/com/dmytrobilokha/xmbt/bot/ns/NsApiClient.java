@@ -25,7 +25,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -34,10 +33,11 @@ import java.util.stream.Collectors;
 @NotThreadSafe
 class NsApiClient {
 
+    static final ZoneId DEFAULT_TIMEZONE_ID = ZoneId.of("Europe/Amsterdam");
+
     private static final String STATIONS_ENDPOINT = "/reisinformatie-api/api/v2/stations";
     private static final String TRIPS_ENDPOINT = "/reisinformatie-api/api/v3/trips";
     private static final Logger LOG = LoggerFactory.getLogger(NsApiClient.class);
-    private static final ZoneId DEFAULT_TIMEZONE_ID = ZoneId.of("Europe/Amsterdam");
 
     @Nonnull
     private final ConfigService configService;
@@ -113,33 +113,12 @@ class NsApiClient {
         if (tripsPayload == null || tripsPayload.getTrips() == null || tripsPayload.getTrips().isEmpty()) {
             throw new NsApiException("Got invalid response from route planning NS API with no trips: " + tripsPayload);
         }
-        var now = ZonedDateTime.now().withZoneSameInstant(DEFAULT_TIMEZONE_ID).toLocalDateTime();
         return tripsPayload.getTrips()
                 .stream()
                 .filter(Objects::nonNull)
                 .map(this::mapTripInfo)
                 .filter(Objects::nonNull)
-                .filter(legsList -> !legsList.isEmpty())
-                .filter(legsList -> now.isBefore(legsList.get(0).getOrigin().getDateTime()))
-                .sorted(this::compareTripPlans)
                 .collect(Collectors.toList());
-    }
-
-    private int compareTripPlans(@Nonnull List<TripLeg> planA, @Nonnull List<TripLeg> planB) {
-        //First priority in sorting: earlier arrivals first
-        int result = planA.get(planA.size() - 1).getDestination().getDateTime()
-                .compareTo(planB.get(planB.size() - 1).getDestination().getDateTime());
-        if (result != 0) {
-            return result;
-        }
-        //Second priority in sorting: less changes first
-        result = planA.size() - planB.size();
-        if (result != 0) {
-            return result;
-        }
-        //Third priority in sorting: later departure first
-        return planB.get(0).getOrigin().getDateTime()
-                .compareTo(planA.get(0).getOrigin().getDateTime());
     }
 
     @CheckForNull

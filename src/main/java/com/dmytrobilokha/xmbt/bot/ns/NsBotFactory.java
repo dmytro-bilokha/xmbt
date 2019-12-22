@@ -34,7 +34,8 @@ public class NsBotFactory implements BotFactory {
     public NsBot produce(@Nonnull BotConnector connector) {
         var dao = new NsTrainStationDao(persistenceService);
         var apiClient = new NsApiClient(configService, HttpClient.newHttpClient());
-        return new NsBot(connector, dao, apiClient);
+        var service = new NsService(dao, apiClient);
+        return new NsBot(connector, service);
     }
 
 }

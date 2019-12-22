@@ -2,7 +2,7 @@ package com.dmytrobilokha.xmbt.bot.ns;
 
 import javax.annotation.Nonnull;
 
-public class NsApiException extends Exception {
+class NsApiException extends NsServiceException {
 
     NsApiException(@Nonnull String message) {
         super(message);

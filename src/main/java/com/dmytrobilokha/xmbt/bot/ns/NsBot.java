@@ -4,14 +4,11 @@ import com.dmytrobilokha.xmbt.api.BotConnector;
 import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.Response;
 import com.dmytrobilokha.xmbt.api.ResponseMessage;
-import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.sql.SQLException;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,26 +21,24 @@ class NsBot implements Runnable {
     @Nonnull
     private final BotConnector messageQueueClient;
     @Nonnull
-    private final NsTrainStationDao dao;
-    @Nonnull
-    private final NsApiClient apiClient;
-    @Nonnull
-    private final FuzzyDictionary<NsTrainStation> stationDictionary;
+    private final NsService nsService;
 
     NsBot(
             @Nonnull BotConnector messageQueueClient
-            , @Nonnull NsTrainStationDao dao
-            , @Nonnull NsApiClient apiClient
+            , @Nonnull NsService nsService
     ) {
         this.messageQueueClient = messageQueueClient;
-        this.dao = dao;
-        this.apiClient = apiClient;
-        this.stationDictionary = FuzzyDictionary.withLatinLetters();
+        this.nsService = nsService;
     }
 
     @Override
     public void run() {
-        initStationDictionary();
+        try {
+            nsService.initStationDictionary();
+        } catch (NsServiceException ex) {
+            LOG.error("Failed to initialize stations list, exiting", ex);
+            return;
+        }
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 RequestMessage incomingMessage = messageQueueClient.getBlocking();
@@ -67,7 +62,7 @@ class NsBot implements Runnable {
         var messageText = requestMessage.getTextMessage().getText().strip();
         String[] stations = SPLIT_PATTERN.split(messageText);
         if (stations.length != 2) {
-            sendResponse(requestMessage, "Invalid request format."
+            sendUserErrorResponse(requestMessage, "Invalid request format."
                     + " Should be 'originStation - destinationStation'");
             return;
         }
@@ -78,10 +73,10 @@ class NsBot implements Runnable {
         }
         List<List<TripLeg>> tripPlans;
         try {
-            tripPlans = apiClient.fetchTripPlans(originStation, destinationStation);
+            tripPlans = nsService.planTrip(originStation, destinationStation);
         } catch (NsApiException ex) {
             LOG.error("Exception during issuing plan trip request to the NS API", ex);
-            sendResponse(requestMessage, "Failed to get response from NS API");
+            sendInternalErrorResponse(requestMessage, "Failed to get response from NS API");
             return;
         }
         responseWithTripPlans(requestMessage, tripPlans);
@@ -89,13 +84,13 @@ class NsBot implements Runnable {
 
     @CheckForNull
     private NsTrainStation findUniqueStation(@Nonnull RequestMessage incomingMessage, @Nonnull String stationQuery) {
-        var stationsFound = stationDictionary.get(stationQuery);
+        var stationsFound = nsService.findStation(stationQuery);
         if (stationsFound.isEmpty()) {
-            sendResponse(incomingMessage, "Cannot find any station matching '" + stationQuery + '\'');
+            sendUserErrorResponse(incomingMessage, "Cannot find any station matching '" + stationQuery + '\'');
             return null;
         }
         if (stationsFound.size() > 1) {
-            sendResponse(incomingMessage, "Found more than one station matching '" + stationQuery
+            sendUserErrorResponse(incomingMessage, "Found more than one station matching '" + stationQuery
                 + "': " + stationsFound.stream().map(NsTrainStation::getName).collect(Collectors.joining(",")));
             return null;
         }
@@ -107,7 +102,7 @@ class NsBot implements Runnable {
         var formattedPlans = tripPlans.stream()
                 .map(this::formatTripPlan)
                 .collect(Collectors.joining("\n---\n"));
-        sendResponse(requestMessage, formattedPlans);
+        sendOkResponse(requestMessage, formattedPlans);
     }
 
     @Nonnull
@@ -135,37 +130,31 @@ class NsBot implements Runnable {
         return outputBuilder.toString();
     }
 
-    private void initStationDictionary() {
-        try {
-            var stations = dao.fetchAll();
-            refreshStationDictionary(stations);
-        } catch (SQLException ex) {
-            LOG.error("Failed to read the stations list. Dictionary won't be initialized", ex);
-        }
-    }
-
-    private void refreshStationDictionary(@Nonnull Collection<NsTrainStation> stations) {
-        stationDictionary.clear();
-        stations.forEach(station -> stationDictionary.put(station.getName(), station));
-    }
-
-    private void sendResponse(@Nonnull RequestMessage request, @Nonnull String responseText) {
+    private void sendOkResponse(@Nonnull RequestMessage request, @Nonnull String responseText) {
         messageQueueClient.send(new ResponseMessage(
                 request, Response.OK, responseText));
     }
 
+    private void sendUserErrorResponse(@Nonnull RequestMessage request, @Nonnull String responseText) {
+        messageQueueClient.send(new ResponseMessage(
+                request, Response.INVALID_COMMAND, responseText));
+    }
+
+    private void sendInternalErrorResponse(@Nonnull RequestMessage request, @Nonnull String responseText) {
+        messageQueueClient.send(new ResponseMessage(
+                request, Response.INTERNAL_ERROR, responseText));
+    }
+
     private void syncStations(@Nonnull RequestMessage incomingRequest) throws InterruptedException {
         try {
-            var stations = apiClient.fetchAllNlStations();
-            dao.overwriteAll(stations);
-            refreshStationDictionary(stations);
-            sendResponse(incomingRequest, "The station list has been synchronized");
+            nsService.syncStations();
+            sendOkResponse(incomingRequest, "The station list has been synchronized");
         } catch (NsApiException ex) {
-            LOG.error("Failed to fetch stations to sync", ex);
-            sendResponse(incomingRequest, "Failed to synchronize stations because of API issue");
-        } catch (SQLException ex) {
-            LOG.error("Failed to update stations in the DB", ex);
-            sendResponse(incomingRequest, "Failed to synchronize stations because of internal DB issue");
+            LOG.error("Sync stations NS API call failed", ex);
+            sendInternalErrorResponse(incomingRequest, "Failed to synchronize stations because of API issue");
+        } catch (NsServiceException ex) {
+            LOG.error("Failed to update stations", ex);
+            sendInternalErrorResponse(incomingRequest, "Failed to synchronize stations because of internal error");
         }
     }
 

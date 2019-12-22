@@ -229,7 +229,7 @@
     <!-- No magic numbers in conditions -->
     <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
         <properties>
-            <property name="ignoreMagicNumbers" value="-1,0,1" />
+            <property name="ignoreMagicNumbers" value="-1,0,1,2" />
         </properties>
     </rule>
     <!-- Avoid loosing exception info -->
