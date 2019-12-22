@@ -5,7 +5,6 @@ import com.dmytrobilokha.xmbt.bot.echo.EchoBotFactory;
 import com.dmytrobilokha.xmbt.bot.ns.NsBotFactory;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.config.ConfigService;
-import com.dmytrobilokha.xmbt.config.property.PidFilePathProperty;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
@@ -15,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,15 +48,10 @@ public final class Loader {
         try {
             beanRegistry.initServices(SERVICE_CLASSES);
             addShutdownHook(beanRegistry.getServiceBean(Cleaner.class));
-            var configService = beanRegistry.getServiceBean(ConfigService.class);
-            Path pidFilePath = configService.getProperty(PidFilePathProperty.class).getValue();
-            writePidToFile(beanRegistry.getServiceBean(FsService.class), pidFilePath);
             var cleaner = beanRegistry.getServiceBean(Cleaner.class);
-            cleaner.registerFile(pidFilePath);
             cleaner.registerThread(Thread.currentThread());
             System.out.println("OK");
-            detachFromTerminal();
-        } catch (InitializationException | IOException | RuntimeException ex) {
+        } catch (InitializationException | RuntimeException ex) {
             System.out.println("FAIL! Check log for details");
             LOG.error("Failed to initialize the service", ex);
             System.exit(1);
@@ -93,23 +85,8 @@ public final class Loader {
         }
     }
 
-    private void writePidToFile(
-            @Nonnull FsService fsService, @Nonnull Path pidFilePath) throws InitializationException {
-        try {
-            fsService.writeFile(pidFilePath, writer -> writer.write(Long.toString(ProcessHandle.current().pid())));
-        } catch (IOException ex) {
-            throw new InitializationException("Failed to save PID to file '" + pidFilePath + "'", ex);
-        }
-    }
-
     private void addShutdownHook(@Nonnull Cleaner cleaner) {
         Runtime.getRuntime().addShutdownHook(cleaner);
-    }
-
-    private void detachFromTerminal() throws IOException {
-        System.in.close();
-        System.out.close();
-        System.err.close();
     }
 
 }
