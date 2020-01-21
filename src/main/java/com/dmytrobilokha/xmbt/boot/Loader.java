@@ -3,6 +3,7 @@ package com.dmytrobilokha.xmbt.boot;
 import com.dmytrobilokha.xmbt.api.BotFactory;
 import com.dmytrobilokha.xmbt.bot.echo.EchoBotFactory;
 import com.dmytrobilokha.xmbt.bot.ns.NsBotFactory;
+import com.dmytrobilokha.xmbt.bot.nul.NullBotFactory;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.dmytrobilokha.xmbt.fs.FsService;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,7 @@ public final class Loader {
     );
 
     private static final List<Class<? extends BotFactory>> BOT_FACTORY_CLASSES = List.of(
-            EchoBotFactory.class, NsBotFactory.class
+            EchoBotFactory.class, NullBotFactory.class, NsBotFactory.class
     );
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
@@ -44,7 +46,7 @@ public final class Loader {
     }
 
     private void init() {
-        System.out.print("Initializing...");
+        System.out.print(LocalDateTime.now() + ": Initializing...");
         try {
             beanRegistry.initServices(SERVICE_CLASSES);
             addShutdownHook(beanRegistry.getServiceBean(Cleaner.class));
@@ -52,7 +54,7 @@ public final class Loader {
             cleaner.registerThread(Thread.currentThread());
             System.out.println("OK");
         } catch (InitializationException | RuntimeException ex) {
-            System.out.println("FAIL! Check log for details");
+            System.out.println(LocalDateTime.now() + ": FAIL! Check log for details");
             LOG.error("Failed to initialize the service", ex);
             System.exit(1);
         }

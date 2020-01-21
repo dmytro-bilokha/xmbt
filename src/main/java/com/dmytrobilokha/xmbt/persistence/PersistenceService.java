@@ -37,6 +37,7 @@ public class PersistenceService implements Initializable {
         dbPoolConfig.setJdbcUrl(configService.getProperty(DbUrlProperty.class).getStringValue());
         dbPoolConfig.setUsername(configService.getProperty(DbUsernameProperty.class).getStringValue());
         dbPoolConfig.setPassword(configService.getProperty(DbPasswordProperty.class).getStringValue());
+        dbPoolConfig.setMaximumPoolSize(configService.getProperty(DbPoolSizeProperty.class).getValue());
         dbPoolConfig.addDataSourceProperty("cachePrepStmts", "true");
         dbPoolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         dbPoolConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
