@@ -41,8 +41,9 @@ public class SubscribeCommand implements Command {
         this.messageDao = messageDao;
         this.subcommands = Stream
                 .of(new ListSubcommand(botRegistry, messageDao)
-                    , new AddSubcommand(botRegistry, messageDao))
-                .collect(Collectors.toUnmodifiableMap(Subcommand::getName, subcommand -> subcommand));
+                    , new AddSubcommand(botRegistry, messageDao)
+                    , new DeleteSubcommand(botRegistry, messageDao)
+                ).collect(Collectors.toUnmodifiableMap(Subcommand::getName, subcommand -> subcommand));
     }
 
     @Nonnull

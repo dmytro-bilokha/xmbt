@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.sql.SQLException;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 class ListSubcommand implements Subcommand {
 
@@ -46,19 +45,21 @@ class ListSubcommand implements Subcommand {
 
     @Nonnull
     private String getUserSubscriptionsText(@Nonnull TextMessage userMessage) {
-        String subscriptions;
+        var textBuilder = new StringBuilder();
         try {
-            subscriptions = messageDao.fetchSubscriptionsByAddress(userMessage.getAddress())
-                    .stream()
-                    .map(ScheduledMessage::getDisplayString)
-                    .collect(Collectors.joining(System.lineSeparator()));
+            int num = 1;
+            for (ScheduledMessage subscription : messageDao.fetchSubscriptionsByAddress(userMessage.getAddress())) {
+                textBuilder.append(System.lineSeparator())
+                        .append(num++)
+                        .append(". ")
+                        .append(subscription.getDisplayString());
+            }
         } catch (SQLException ex) {
             LOG.error("Failed to get subscriptions for request {}", userMessage, ex);
             return "Failed to fetch your subscriptions because of a DB error";
         }
-        var mainMessage = subscriptions.isEmpty() ? "You have no subscriptions yet"
-                : "Your subscriptions: " + System.lineSeparator() + subscriptions;
-        return mainMessage + System.lineSeparator();
+        return textBuilder.length() == 0 ? "You have no subscriptions yet"
+                : textBuilder.insert(0, "Your subscriptions: ").toString();
     }
 
 }

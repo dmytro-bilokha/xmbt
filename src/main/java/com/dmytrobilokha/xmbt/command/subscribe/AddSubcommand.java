@@ -64,7 +64,7 @@ class AddSubcommand implements Subcommand {
     @Nonnull
     @Override
     public String getName() {
-        return "add";
+        return COMMAND_SUBNAME;
     }
 
     @Override

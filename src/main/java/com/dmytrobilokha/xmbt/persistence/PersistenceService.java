@@ -2,6 +2,7 @@ package com.dmytrobilokha.xmbt.persistence;
 
 import com.dmytrobilokha.xmbt.ThrowingConsumer;
 import com.dmytrobilokha.xmbt.ThrowingFunction;
+import com.dmytrobilokha.xmbt.ThrowingIntFunction;
 import com.dmytrobilokha.xmbt.boot.Initializable;
 import com.dmytrobilokha.xmbt.config.ConfigService;
 import com.zaxxer.hikari.HikariConfig;
@@ -15,7 +16,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 
 public class PersistenceService implements Initializable {
 
@@ -52,18 +52,18 @@ public class PersistenceService implements Initializable {
         flyway.migrate();
     }
 
-    public <R> List<R> executeQuery(
-            @Nonnull ThrowingFunction<Connection, List<R>, SQLException> query) throws SQLException {
+    public <R> R executeQuery(
+            @Nonnull ThrowingFunction<Connection, R, SQLException> query) throws SQLException {
         try (var connection = getDbConnection()) {
             connection.setReadOnly(true);
             return query.apply(connection);
         }
     }
 
-    public void executeAutoCommitted(
-            @Nonnull ThrowingConsumer<Connection, SQLException> operator) throws SQLException {
+    public int executeUpdateAutoCommitted(
+            @Nonnull ThrowingIntFunction<Connection, SQLException> operator) throws SQLException {
         try (var connection = getDbConnection()) {
-            operator.accept(connection);
+            return operator.apply(connection);
         }
     }
 

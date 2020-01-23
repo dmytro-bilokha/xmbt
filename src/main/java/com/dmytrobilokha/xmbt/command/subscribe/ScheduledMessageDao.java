@@ -5,6 +5,7 @@ import com.dmytrobilokha.xmbt.api.RequestMessage;
 import com.dmytrobilokha.xmbt.api.TextMessage;
 import com.dmytrobilokha.xmbt.persistence.PersistenceService;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -87,12 +88,52 @@ public class ScheduledMessageDao {
     private List<ScheduledMessage> executeSelectByAddress(
             @Nonnull Connection connection, @Nonnull String address) throws SQLException {
         try (var selectStatement = connection.prepareStatement(
-                SCHEDULED_MESSAGE_SELECT + " WHERE sender_address=?"
+                SCHEDULED_MESSAGE_SELECT + " WHERE sender_address=? ORDER BY id ASC"
         )) {
             selectStatement.setString(1, address);
             try (var resultSet = selectStatement.executeQuery()) {
                 return mapScheduledMessages(resultSet);
             }
+        }
+    }
+
+    @CheckForNull
+    private Long findIdByAddressAndOrder(
+            @Nonnull Connection connection
+            , @Nonnull String address
+            , int subscriptionNumber) throws SQLException {
+        try (var selectStatement = connection.prepareStatement(
+                "SELECT id FROM scheduled_message WHERE sender_address=? ORDER BY id ASC LIMIT ?, 1"
+        )) {
+            selectStatement.setString(1, address);
+            selectStatement.setInt(2, subscriptionNumber - 1);
+            try (var resultSet = selectStatement.executeQuery()) {
+                var hasNext = resultSet.next();
+                if (!hasNext) {
+                    return null;
+                }
+                return resultSet.getLong("id");
+            }
+        }
+    }
+
+    @Nonnull
+    int deleteSubscriptionByAddressAndOrder(@Nonnull String address, int subscriptionNumber) throws SQLException {
+        Long id = persistenceService.executeQuery(con -> findIdByAddressAndOrder(con, address, subscriptionNumber));
+        if (id == null) {
+            return 0;
+        }
+        return persistenceService.executeUpdateAutoCommitted(con -> executeDeleteByAddressAndId(con, address, id));
+    }
+
+    private int executeDeleteByAddressAndId(
+            @Nonnull Connection connection, @Nonnull String address, long id) throws SQLException {
+        try (var deleteStatement = connection.prepareStatement(
+                "DELETE FROM scheduled_message WHERE sender_address = ? AND id = ?"
+        )) {
+            deleteStatement.setString(1, address);
+            deleteStatement.setLong(2, id);
+            return deleteStatement.executeUpdate();
         }
     }
 
@@ -136,20 +177,20 @@ public class ScheduledMessageDao {
         }
     }
 
-    void delete(@Nonnull ScheduledMessage message) throws SQLException {
+    int delete(@Nonnull ScheduledMessage message) throws SQLException {
         Long messageId = message.getId();
         if (messageId == null) {
-            return;
+            return 0;
         }
-        persistenceService.executeAutoCommitted(con -> executeDelete(con, messageId));
+        return persistenceService.executeUpdateAutoCommitted(con -> executeDelete(con, messageId));
     }
 
-    private void executeDelete(@Nonnull Connection connection, @Nonnull Long messageId) throws SQLException {
+    private int executeDelete(@Nonnull Connection connection, @Nonnull Long messageId) throws SQLException {
         try (var deleteStatement = connection.prepareStatement(
                 "DELETE FROM scheduled_message WHERE id=?"
         )) {
             deleteStatement.setLong(1, messageId);
-            deleteStatement.executeUpdate();
+            return deleteStatement.executeUpdate();
         }
     }
 
@@ -159,10 +200,10 @@ public class ScheduledMessageDao {
         if (messageId == null) {
             throw new IllegalArgumentException("Cannot update entity " + message + " in the DB, it hasn't been saved");
         }
-        persistenceService.executeAutoCommitted(con -> executeUpdateNextDateTime(con, messageId, dateTime));
+        persistenceService.executeUpdateAutoCommitted(con -> executeUpdateNextDateTime(con, messageId, dateTime));
     }
 
-    private void executeUpdateNextDateTime(
+    private int executeUpdateNextDateTime(
             @Nonnull Connection connection
             , @Nonnull Long messageId
             , @Nonnull LocalDateTime dateTime
@@ -172,7 +213,7 @@ public class ScheduledMessageDao {
         )) {
             updateStatement.setTimestamp(1, Timestamp.valueOf(dateTime));
             updateStatement.setLong(2, messageId);
-            updateStatement.executeUpdate();
+            return updateStatement.executeUpdate();
         }
     }
 
