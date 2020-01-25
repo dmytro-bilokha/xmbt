@@ -55,6 +55,7 @@ public class BotManager {
         botRegistry.startBots(botFactories);
         try {
             while (!Thread.currentThread().isInterrupted()) {
+                connector.ensureConnected();
                 processOutgoingQueue();
                 processIncomingQueue();
                 for (Command command : commandMap.values()) {
@@ -67,6 +68,8 @@ public class BotManager {
             LOG.info("Got interruption signal", ex);
         } catch (RuntimeException ex) {
             LOG.error("Got unexpected exception", ex);
+        } catch (ConnectionException ex) {
+            LOG.error("Failed to reconnect to the server", ex);
         } finally {
             LOG.info("Exiting...");
             connector.disconnect();

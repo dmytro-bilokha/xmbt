@@ -42,7 +42,7 @@ public class XmppConnector {
 
     public void connect() throws ConnectionException, InterruptedException {
         if (connection != null) {
-            throw new ConnectionException("Unable to connect, connetion has been established already");
+            throw new ConnectionException("Unable to connect, connection has been established already");
         }
         String username = configService.getProperty(XmppUsernameProperty.class).getStringValue();
         String password = configService.getProperty(XmppPasswordProperty.class).getStringValue();
@@ -93,6 +93,19 @@ public class XmppConnector {
         if (connection != null) {
             connection.disconnect();
             connection = null; //NOPMD
+        }
+    }
+
+    public void ensureConnected() throws ConnectionException, InterruptedException {
+        if (connection == null) {
+            connect();
+        } else if (!connection.isConnected()) {
+            try {
+                LOG.info("Seems like connection has been lost, trying to reconnect to the XMPP server");
+                connection.connect().login();
+            } catch (XMPPException | SmackException | IOException ex) {
+                throw new ConnectionException("Failed to reconnect to the XMPP server", ex);
+            }
         }
     }
 
