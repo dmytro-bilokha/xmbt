@@ -71,8 +71,8 @@ public class BotManager {
         } catch (ConnectionException ex) {
             LOG.error("Failed to reconnect to the server", ex);
         } finally {
-            LOG.info("Exiting...");
             connector.disconnect();
+            LOG.info("Exiting...");
         }
     }
 

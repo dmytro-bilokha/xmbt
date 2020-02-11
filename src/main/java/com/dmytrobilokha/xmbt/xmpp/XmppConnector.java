@@ -90,22 +90,39 @@ public class XmppConnector {
     }
 
     public void disconnect() {
-        if (connection != null) {
+        if (connection != null && connection.isConnected()) {
+            LOG.info("Disconnecting XMPP...");
             connection.disconnect();
-            connection = null; //NOPMD
         }
+        connection = null; //NOPMD
     }
 
     public void ensureConnected() throws ConnectionException, InterruptedException {
         if (connection == null) {
             connect();
         } else if (!connection.isConnected()) {
-            try {
-                LOG.info("Seems like connection has been lost, trying to reconnect to the XMPP server");
-                connection.connect().login();
-            } catch (XMPPException | SmackException | IOException ex) {
-                throw new ConnectionException("Failed to reconnect to the XMPP server", ex);
+            int pause = configService.getProperty(XmppReconnectPauseSeedProperty.class).getValue();
+            int maxTries = configService.getProperty(XmppReconnectTrialsProperty.class).getValue();
+            int totalWaitTime = 0;
+            int trial;
+            for (trial = 1; trial <= maxTries && !connection.isConnected(); trial++) {
+                Thread.sleep(pause * 1000);
+                totalWaitTime += pause;
+                pause *= 1.5; //Increase pause exponentially
+                LOG.info("Trying to reconnect to the XMPP server. Try number {}", trial);
+                try {
+                    connection.connect().login();
+                } catch (XMPPException | SmackException | IOException ex) {
+                    LOG.warn("Reconnection try {} failed", trial, ex);
+                }
             }
+            if (connection.isConnected()) {
+                LOG.info("Reconnection try {} seems to be successful. Total wait time is {} seconds"
+                        , trial, totalWaitTime);
+                return;
+            }
+            throw new ConnectionException("Failed to reconnect to the XMPP server after " + trial
+                    + " tries and total waiting time of " + totalWaitTime + " seconds");
         }
     }
 
