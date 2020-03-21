@@ -36,6 +36,8 @@
                     <archive>
                         <manifest>
                             <mainClass>${application.bootstrapClass}</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                     </archive>
                 </configuration>

@@ -11,6 +11,7 @@
 
     <modules>
         <module>xmbt-main</module>
+        <module>xmbt-bot-sysinfo</module>
         <module>xmbt-app</module>
     </modules>
 
