@@ -13,6 +13,10 @@
     <artifactId>xmbt-bot-sysinfo</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <build.timestamp>${maven.build.timestamp}</build.timestamp>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.dmytrobilokha</groupId>
@@ -27,5 +31,14 @@
             <artifactId>jsr305</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 
 </project>

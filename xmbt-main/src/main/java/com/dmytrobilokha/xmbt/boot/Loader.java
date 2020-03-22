@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 
 public final class Loader {
 
@@ -75,6 +76,10 @@ public final class Loader {
             } catch (InitializationException ex) {
                 LOG.error("Failed to init bot factory {}. Will proceed without this bot", factoryClass);
             }
+        }
+        ServiceLoader<BotFactory> botFactoriesLoader = ServiceLoader.load(BotFactory.class);
+        for (BotFactory botFactory : botFactoriesLoader) {
+            botFactories.add(botFactory);
         }
         if (botFactories.isEmpty()) {
             LOG.error("Failed to initialize any bot factory, shutting down");
