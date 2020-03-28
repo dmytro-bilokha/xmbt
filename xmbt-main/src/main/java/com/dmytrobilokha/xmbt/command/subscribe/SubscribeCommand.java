@@ -3,6 +3,7 @@ package com.dmytrobilokha.xmbt.command.subscribe;
 import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
 import com.dmytrobilokha.xmbt.api.messaging.Response;
 import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionaryFactory;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.command.InvalidUserInputException;
 import com.dmytrobilokha.xmbt.command.Subcommand;
@@ -36,13 +37,17 @@ public class SubscribeCommand implements Command {
     @CheckForNull
     private LocalDateTime lastScheduleCheck;
 
-    public SubscribeCommand(@Nonnull BotRegistry botRegistry, @Nonnull ScheduledMessageDao messageDao) {
+    public SubscribeCommand(
+            @Nonnull BotRegistry botRegistry
+            , @Nonnull ScheduledMessageDao messageDao
+            , @Nonnull FuzzyDictionaryFactory dictionaryFactory
+    ) {
         this.botRegistry = botRegistry;
         this.messageDao = messageDao;
         this.subcommands = Stream
                 .of(new ListSubcommand(botRegistry, messageDao)
-                    , new AddSubcommand(botRegistry, messageDao)
-                    , new DeleteSubcommand(botRegistry, messageDao)
+                        , new AddSubcommand(botRegistry, messageDao, dictionaryFactory.produceWithLatinAlphabet())
+                        , new DeleteSubcommand(botRegistry, messageDao)
                 ).collect(Collectors.toUnmodifiableMap(Subcommand::getName, subcommand -> subcommand));
     }
 

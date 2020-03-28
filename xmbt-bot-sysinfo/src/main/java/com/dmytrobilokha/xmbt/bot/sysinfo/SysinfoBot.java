@@ -39,6 +39,7 @@ class SysinfoBot implements Runnable {
             properties.load(propertiesStream);
             return properties.getProperty("buildTimestamp", "UNKNOWN (no property)");
         } catch (IOException ex) {
+            LOG.error("Failed to load module resource with properties", ex);
             return "UNKNOWN (failed to read resource)";
         }
     }

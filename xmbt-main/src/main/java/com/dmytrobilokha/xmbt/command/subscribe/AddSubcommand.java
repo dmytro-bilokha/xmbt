@@ -5,9 +5,9 @@ import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
 import com.dmytrobilokha.xmbt.api.messaging.Response;
 import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
 import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
 import com.dmytrobilokha.xmbt.command.InvalidUserInputException;
 import com.dmytrobilokha.xmbt.command.Subcommand;
-import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import org.slf4j.Logger;
@@ -51,11 +51,15 @@ class AddSubcommand implements Subcommand {
     @Nonnull
     private final FuzzyDictionary<DayOfWeek> dayOfWeekDictionary;
 
-    AddSubcommand(@Nonnull BotRegistry botRegistry, @Nonnull ScheduledMessageDao messageDao) {
+    AddSubcommand(
+            @Nonnull BotRegistry botRegistry
+            , @Nonnull ScheduledMessageDao messageDao
+            , @Nonnull FuzzyDictionary<DayOfWeek> dayOfWeekDictionary
+    ) {
         this.botRegistry = botRegistry;
         this.messageDao = messageDao;
         this.validationWaitingMessagesById = new HashMap<>();
-        this.dayOfWeekDictionary = FuzzyDictionary.withLatinLetters();
+        this.dayOfWeekDictionary = dayOfWeekDictionary;
         for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
             dayOfWeekDictionary.put(dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH), dayOfWeek);
         }

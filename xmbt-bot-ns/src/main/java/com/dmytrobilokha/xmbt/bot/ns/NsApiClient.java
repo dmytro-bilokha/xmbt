@@ -1,6 +1,8 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
 import com.dmytrobilokha.xmbt.api.service.config.ConfigService;
+import com.dmytrobilokha.xmbt.bot.ns.config.NsApiKeyProperty;
+import com.dmytrobilokha.xmbt.bot.ns.config.NsApiUrlProperty;
 import com.dmytrobilokha.xmbt.bot.ns.dto.StationInfoDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.StationsPayloadDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripInfoDto;

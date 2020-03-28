@@ -1,6 +1,7 @@
 package com.dmytrobilokha.xmbt.api.service;
 
 import com.dmytrobilokha.xmbt.api.service.config.ConfigService;
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionaryFactory;
 import com.dmytrobilokha.xmbt.api.service.persistence.PersistenceService;
 
 import javax.annotation.Nonnull;
@@ -12,5 +13,8 @@ public interface ServiceContainer {
     
     @Nonnull
     PersistenceService getPersistenceService();
+
+    @Nonnull
+    FuzzyDictionaryFactory getFuzzyDictionaryFactory();
 
 }

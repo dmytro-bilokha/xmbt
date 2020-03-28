@@ -1,9 +1,9 @@
 package com.dmytrobilokha.xmbt.boot;
 
 import com.dmytrobilokha.xmbt.api.bot.BotFactory;
-import com.dmytrobilokha.xmbt.bot.ns.NsBotFactory;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.config.ConfigServiceImpl;
+import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionaryFactoryImpl;
 import com.dmytrobilokha.xmbt.fs.FsService;
 import com.dmytrobilokha.xmbt.manager.BotManager;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
@@ -25,7 +25,7 @@ public final class Loader {
     private static final List<Class> SERVICE_CLASSES = List.of(
             Cleaner.class, FsService.class, ConfigServiceImpl.class, LoggerInitializer.class
             , PersistenceServiceImpl.class, BotRegistry.class, XmppConnector.class, CommandFactory.class
-            , BotManager.class, ServiceContainerImpl.class
+            , BotManager.class, ServiceContainerImpl.class, FuzzyDictionaryFactoryImpl.class
     );
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
@@ -61,7 +61,6 @@ public final class Loader {
 
     private void go() {
         var botFactories = new ArrayList<BotFactory>();
-        botFactories.add(new NsBotFactory());
         ServiceLoader<BotFactory> botFactoriesLoader = ServiceLoader.load(BotFactory.class);
         for (BotFactory botFactory : botFactoriesLoader) {
             botFactories.add(botFactory);

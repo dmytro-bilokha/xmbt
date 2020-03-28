@@ -4,4 +4,8 @@
         <Class name="com.dmytrobilokha.xmbt.boot.Loader" />
         <Bug pattern="DM_EXIT" />
     </Match>
+    <Match>
+        <!-- Spotbugs throws false errors here -->
+        <Class name="com.dmytrobilokha.xmbt.bot.sysinfo.SysinfoBot" />
+    </Match>
 </FindBugsFilter>

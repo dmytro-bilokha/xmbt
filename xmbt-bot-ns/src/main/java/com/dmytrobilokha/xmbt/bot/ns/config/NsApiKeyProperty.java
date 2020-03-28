@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.bot.ns;
+package com.dmytrobilokha.xmbt.bot.ns.config;
 
 import com.dmytrobilokha.xmbt.api.service.config.ConfigProperty;
 import com.dmytrobilokha.xmbt.api.service.config.InvalidConfigException;

@@ -1,5 +1,7 @@
 package com.dmytrobilokha.xmbt.dictionary;
 
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
+
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class FuzzyDictionary<T> {
+public class FuzzyDictionaryImpl<T> implements FuzzyDictionary<T> {
 
     @Nonnull
     private final int[] alphabet;
@@ -18,22 +20,20 @@ public class FuzzyDictionary<T> {
     @Nonnull
     private final Map<String, List<T>> exactMatchStore;
 
-    private FuzzyDictionary(@Nonnull String alphabetString) {
+    FuzzyDictionaryImpl(@Nonnull String alphabetString) {
         this.alphabet = alphabetString.toLowerCase().codePoints().sorted().distinct().toArray();
         this.fuzzyMatchStore = new ArrayList<>();
         this.exactMatchStore = new HashMap<>();
     }
 
-    public static <T> FuzzyDictionary<T> withLatinLetters() {
-        return new FuzzyDictionary<>("qwertyuioplkjhgfdsazxcvbnm");
-    }
-
+    @Override
     public void put(@Nonnull String phraseText, @Nonnull T phraseObject) {
         var lowercasePhrase = phraseText.toLowerCase();
         exactMatchStore.computeIfAbsent(lowercasePhrase, k -> new ArrayList<>()).add(phraseObject);
         fuzzyMatchStore.add(new Phrase<>(phraseText, phraseObject));
     }
 
+    @Override
     @Nonnull
     public List<T> get(@Nonnull String fuzzyPhrase) {
         var exactMatch = exactMatchStore.get(fuzzyPhrase.toLowerCase());
@@ -50,6 +50,7 @@ public class FuzzyDictionary<T> {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public void clear() {
         fuzzyMatchStore.clear();
     }

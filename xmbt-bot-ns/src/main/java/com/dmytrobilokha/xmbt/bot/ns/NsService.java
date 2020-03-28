@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
-import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -22,10 +22,14 @@ class NsService {
     @Nonnull
     private final FuzzyDictionary<NsTrainStation> stationDictionary;
 
-    NsService(@Nonnull NsTrainStationDao dao, @Nonnull NsApiClient apiClient) {
+    NsService(
+            @Nonnull NsTrainStationDao dao
+            , @Nonnull NsApiClient apiClient
+            , @Nonnull FuzzyDictionary<NsTrainStation> stationDictionary
+    ) {
         this.dao = dao;
         this.apiClient = apiClient;
-        this.stationDictionary = FuzzyDictionary.withLatinLetters();
+        this.stationDictionary = stationDictionary;
     }
 
     void initStationDictionary() throws NsServiceException {

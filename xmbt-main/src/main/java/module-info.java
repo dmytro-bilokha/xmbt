@@ -5,10 +5,11 @@ module xmbt.main {
     exports com.dmytrobilokha.xmbt.api.messaging;
     exports com.dmytrobilokha.xmbt.api.bot;
     exports com.dmytrobilokha.xmbt.api.service;
+    exports com.dmytrobilokha.xmbt.api.service.dictionary;
+    exports com.dmytrobilokha.xmbt.api.service.config;
+    exports com.dmytrobilokha.xmbt.api.service.persistence;
     requires java.sql;
     requires slf4j.api;
-    requires java.json.bind;
-    requires java.net.http;
     requires logback.core;
     requires logback.classic;
     requires com.zaxxer.hikari;

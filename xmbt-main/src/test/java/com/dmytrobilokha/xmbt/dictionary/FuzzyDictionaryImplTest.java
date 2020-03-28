@@ -1,5 +1,6 @@
 package com.dmytrobilokha.xmbt.dictionary;
 
+import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 @Test(groups = "unit")
-public class FuzzyDictionaryTest {
+public class FuzzyDictionaryImplTest {
 
     @DataProvider(name = "dictionaryCases")
     public Object[][] getDictionaryCases() {
@@ -29,7 +30,7 @@ public class FuzzyDictionaryTest {
 
     @Test(dataProvider = "dictionaryCases")
     public void testDictionarySearchWithLatinChars(List<String> phrases, String lookupString, List<String> result) {
-        FuzzyDictionary<String> dictionary = FuzzyDictionary.withLatinLetters();
+        FuzzyDictionary<String> dictionary = new FuzzyDictionaryFactoryImpl().produceWithLatinAlphabet();
         phrases.forEach(phrase -> dictionary.put(phrase, phrase));
         Assert.assertEquals(dictionary.get(lookupString), result);
     }
