@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <name>XMPP Null Bot</name>
+    <name>XMBT Null Bot</name>
     <artifactId>xmbt-bot-null</artifactId>
     <packaging>jar</packaging>
 

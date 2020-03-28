@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <name>XMPP Sysinfo Bot</name>
+    <name>XMBT Sysinfo Bot</name>
     <artifactId>xmbt-bot-sysinfo</artifactId>
     <packaging>jar</packaging>
 
