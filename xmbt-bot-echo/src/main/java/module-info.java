@@ -5,5 +5,4 @@ module xmbt.bot.echo {
     provides BotFactory with EchoBotFactory;
     requires xmbt.main;
     requires jsr305;
-    requires slf4j.api;
 }

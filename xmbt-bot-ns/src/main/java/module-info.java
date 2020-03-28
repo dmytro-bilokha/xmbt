@@ -8,7 +8,5 @@ module xmbt.bot.ns {
     requires xmbt.main;
     requires jsr305;
     requires java.json.bind;
-    requires slf4j.api;
     requires java.net.http;
-    requires java.sql;
 }

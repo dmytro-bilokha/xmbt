@@ -5,5 +5,4 @@ module xmbt.bot.sysinfo {
     provides BotFactory with SysinfoBotFactory;
     requires xmbt.main;
     requires jsr305;
-    requires slf4j.api;
 }

@@ -8,8 +8,8 @@ module xmbt.main {
     exports com.dmytrobilokha.xmbt.api.service.dictionary;
     exports com.dmytrobilokha.xmbt.api.service.config;
     exports com.dmytrobilokha.xmbt.api.service.persistence;
-    requires java.sql;
-    requires slf4j.api;
+    requires transitive java.sql;
+    requires transitive slf4j.api;
     requires logback.core;
     requires logback.classic;
     requires com.zaxxer.hikari;
