@@ -1,7 +1,7 @@
 package com.dmytrobilokha.xmbt.xmpp;
 
-import com.dmytrobilokha.xmbt.api.TextMessage;
-import com.dmytrobilokha.xmbt.config.ConfigService;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
+import com.dmytrobilokha.xmbt.config.ConfigServiceImpl;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import com.dmytrobilokha.xmbt.manager.ConnectionException;
 import com.dmytrobilokha.xmbt.manager.InvalidAddressException;
@@ -29,13 +29,13 @@ public class XmppConnector {
     private static final Logger LOG = LoggerFactory.getLogger(XmppConnector.class);
 
     @Nonnull
-    private final ConfigService configService;
+    private final ConfigServiceImpl configService;
     @Nonnull
     private final BotRegistry botRegistry;
     @CheckForNull
     private AbstractXMPPConnection connection;
 
-    public XmppConnector(@Nonnull ConfigService configService, @Nonnull BotRegistry botRegistry) {
+    public XmppConnector(@Nonnull ConfigServiceImpl configService, @Nonnull BotRegistry botRegistry) {
         this.configService = configService;
         this.botRegistry = botRegistry;
     }

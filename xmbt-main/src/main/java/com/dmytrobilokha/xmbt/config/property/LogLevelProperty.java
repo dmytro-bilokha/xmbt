@@ -1,6 +1,7 @@
 package com.dmytrobilokha.xmbt.config.property;
 
 import ch.qos.logback.classic.Level;
+import com.dmytrobilokha.xmbt.api.service.config.ConfigProperty;
 
 import javax.annotation.Nonnull;
 import java.util.Map;

@@ -11,7 +11,7 @@ import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
-import com.dmytrobilokha.xmbt.config.ConfigService;
+import com.dmytrobilokha.xmbt.config.ConfigServiceImpl;
 import com.dmytrobilokha.xmbt.config.property.LogFilePathProperty;
 import com.dmytrobilokha.xmbt.config.property.LogLevelProperty;
 import org.slf4j.LoggerFactory;
@@ -21,9 +21,9 @@ import javax.annotation.Nonnull;
 public class LoggerInitializer implements Initializable {
 
     @Nonnull
-    private final ConfigService configService;
+    private final ConfigServiceImpl configService;
 
-    public LoggerInitializer(@Nonnull ConfigService configService) {
+    public LoggerInitializer(@Nonnull ConfigServiceImpl configService) {
         this.configService = configService;
     }
 

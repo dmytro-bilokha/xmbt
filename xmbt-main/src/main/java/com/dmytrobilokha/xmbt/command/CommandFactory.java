@@ -4,7 +4,7 @@ import com.dmytrobilokha.xmbt.command.list.ListCommand;
 import com.dmytrobilokha.xmbt.command.subscribe.ScheduledMessageDao;
 import com.dmytrobilokha.xmbt.command.subscribe.SubscribeCommand;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
-import com.dmytrobilokha.xmbt.persistence.PersistenceService;
+import com.dmytrobilokha.xmbt.persistence.PersistenceServiceImpl;
 
 import javax.annotation.Nonnull;
 import java.util.Set;
@@ -12,9 +12,9 @@ import java.util.Set;
 public class CommandFactory {
 
     @Nonnull
-    private final PersistenceService persistenceService;
+    private final PersistenceServiceImpl persistenceService;
 
-    public CommandFactory(@Nonnull PersistenceService persistenceService) {
+    public CommandFactory(@Nonnull PersistenceServiceImpl persistenceService) {
         this.persistenceService = persistenceService;
     }
 

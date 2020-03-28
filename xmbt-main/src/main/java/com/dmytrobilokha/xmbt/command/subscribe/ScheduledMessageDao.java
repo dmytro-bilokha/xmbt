@@ -1,9 +1,9 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
-import com.dmytrobilokha.xmbt.api.Request;
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.TextMessage;
-import com.dmytrobilokha.xmbt.persistence.PersistenceService;
+import com.dmytrobilokha.xmbt.api.messaging.Request;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
+import com.dmytrobilokha.xmbt.persistence.PersistenceServiceImpl;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -32,9 +32,9 @@ public class ScheduledMessageDao {
                     + " FROM scheduled_message";
 
     @Nonnull
-    private final PersistenceService persistenceService;
+    private final PersistenceServiceImpl persistenceService;
 
-    public ScheduledMessageDao(@Nonnull PersistenceService persistenceService) {
+    public ScheduledMessageDao(@Nonnull PersistenceServiceImpl persistenceService) {
         this.persistenceService = persistenceService;
     }
 

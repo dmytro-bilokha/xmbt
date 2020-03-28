@@ -1,6 +1,10 @@
+import com.dmytrobilokha.xmbt.api.bot.BotFactory;
+
 module xmbt.main {
-    uses com.dmytrobilokha.xmbt.api.BotFactory;
-    exports com.dmytrobilokha.xmbt.api;
+    uses BotFactory;
+    exports com.dmytrobilokha.xmbt.api.messaging;
+    exports com.dmytrobilokha.xmbt.api.bot;
+    exports com.dmytrobilokha.xmbt.api.service;
     requires java.sql;
     requires slf4j.api;
     requires java.json.bind;

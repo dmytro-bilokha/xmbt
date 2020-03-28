@@ -1,4 +1,4 @@
-import com.dmytrobilokha.xmbt.api.BotFactory;
+import com.dmytrobilokha.xmbt.api.bot.BotFactory;
 import com.dmytrobilokha.xmbt.bot.sysinfo.SysinfoBotFactory;
 
 module xmbt.bot.sysinfo {

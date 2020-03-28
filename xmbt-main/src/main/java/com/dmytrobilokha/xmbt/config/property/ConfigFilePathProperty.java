@@ -1,6 +1,7 @@
 package com.dmytrobilokha.xmbt.config.property;
 
-import com.dmytrobilokha.xmbt.config.InvalidConfigException;
+import com.dmytrobilokha.xmbt.api.service.config.AbstractPathProperty;
+import com.dmytrobilokha.xmbt.api.service.config.InvalidConfigException;
 
 import javax.annotation.Nonnull;
 import java.util.Map;

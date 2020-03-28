@@ -1,12 +1,12 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
+import com.dmytrobilokha.xmbt.api.service.config.ConfigService;
 import com.dmytrobilokha.xmbt.bot.ns.dto.StationInfoDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.StationsPayloadDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripInfoDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripLegDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripStationDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripsPayloadDto;
-import com.dmytrobilokha.xmbt.config.ConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

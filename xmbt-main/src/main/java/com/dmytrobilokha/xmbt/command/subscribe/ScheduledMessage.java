@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
-import com.dmytrobilokha.xmbt.api.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;

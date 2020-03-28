@@ -20,6 +20,14 @@
         </dependency>
         <dependency>
             <groupId>com.dmytrobilokha</groupId>
+            <artifactId>xmbt-bot-echo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dmytrobilokha</groupId>
+            <artifactId>xmbt-bot-null</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dmytrobilokha</groupId>
             <artifactId>xmbt-bot-sysinfo</artifactId>
         </dependency>
     </dependencies>

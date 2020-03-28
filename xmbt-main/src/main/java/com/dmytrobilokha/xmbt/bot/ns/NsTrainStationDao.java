@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
-import com.dmytrobilokha.xmbt.persistence.PersistenceService;
+import com.dmytrobilokha.xmbt.api.service.persistence.PersistenceService;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;

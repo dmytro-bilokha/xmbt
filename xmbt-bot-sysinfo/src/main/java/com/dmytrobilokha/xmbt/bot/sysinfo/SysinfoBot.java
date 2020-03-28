@@ -1,15 +1,17 @@
 package com.dmytrobilokha.xmbt.bot.sysinfo;
 
-import com.dmytrobilokha.xmbt.api.BotConnector;
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.Response;
-import com.dmytrobilokha.xmbt.api.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Response;
+import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Properties;
 
 class SysinfoBot implements Runnable {
 
@@ -19,10 +21,26 @@ class SysinfoBot implements Runnable {
     private static final LocalDateTime INIT_DATE_TIME = LocalDateTime.now();
 
     @Nonnull
-    private final BotConnector messageQueueClient;
+    private final MessageBus messageQueueClient;
+    @Nonnull
+    private final String buildTimestamp;
 
-    SysinfoBot(@Nonnull BotConnector messageQueueClient) {
+    SysinfoBot(@Nonnull MessageBus messageQueueClient) {
         this.messageQueueClient = messageQueueClient;
+        this.buildTimestamp = getBuildTimestamp();
+    }
+
+    private String getBuildTimestamp() {
+        try (var propertiesStream = this.getClass().getModule().getResourceAsStream("sysinfo.properties")) {
+            if (propertiesStream == null) {
+                return "UNKNOWN (no resource)";
+            }
+            Properties properties = new Properties();
+            properties.load(propertiesStream);
+            return properties.getProperty("buildTimestamp", "UNKNOWN (no property)");
+        } catch (IOException ex) {
+            return "UNKNOWN (failed to read resource)";
+        }
     }
 
     @Override
@@ -46,6 +64,8 @@ class SysinfoBot implements Runnable {
         StringBuilder textBuilder = new StringBuilder()
                 .append("Module name and version: ").append(this.getClass().getModule()
                         .getDescriptor().toNameAndVersion())
+                .append(NEW_LINE)
+                .append("Build on: ").append(buildTimestamp)
                 .append(NEW_LINE)
                 .append("Initialized on: ").append(INIT_DATE_TIME)
                 .append(NEW_LINE)

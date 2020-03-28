@@ -1,11 +1,11 @@
 package com.dmytrobilokha.xmbt.manager;
 
-import com.dmytrobilokha.xmbt.api.BotFactory;
-import com.dmytrobilokha.xmbt.api.Request;
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.Response;
-import com.dmytrobilokha.xmbt.api.ResponseMessage;
-import com.dmytrobilokha.xmbt.api.TextMessage;
+import com.dmytrobilokha.xmbt.api.bot.BotFactory;
+import com.dmytrobilokha.xmbt.api.messaging.Request;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Response;
+import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.command.CommandFactory;
 import com.dmytrobilokha.xmbt.xmpp.XmppConnector;

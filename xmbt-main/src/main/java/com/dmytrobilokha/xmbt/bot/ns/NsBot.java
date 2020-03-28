@@ -1,9 +1,9 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
-import com.dmytrobilokha.xmbt.api.BotConnector;
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.Response;
-import com.dmytrobilokha.xmbt.api.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Response;
+import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +19,12 @@ class NsBot implements Runnable {
     private static final Pattern SPLIT_PATTERN = Pattern.compile(" +- +");
 
     @Nonnull
-    private final BotConnector messageQueueClient;
+    private final MessageBus messageQueueClient;
     @Nonnull
     private final NsService nsService;
 
     NsBot(
-            @Nonnull BotConnector messageQueueClient
+            @Nonnull MessageBus messageQueueClient
             , @Nonnull NsService nsService
     ) {
         this.messageQueueClient = messageQueueClient;

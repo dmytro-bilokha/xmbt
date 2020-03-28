@@ -1,27 +1,13 @@
 package com.dmytrobilokha.xmbt.bot.ns;
 
-import com.dmytrobilokha.xmbt.api.BotConnector;
-import com.dmytrobilokha.xmbt.api.BotFactory;
-import com.dmytrobilokha.xmbt.config.ConfigService;
-import com.dmytrobilokha.xmbt.persistence.PersistenceService;
+import com.dmytrobilokha.xmbt.api.bot.BotFactory;
+import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
+import com.dmytrobilokha.xmbt.api.service.ServiceContainer;
 
 import javax.annotation.Nonnull;
 import java.net.http.HttpClient;
 
 public class NsBotFactory implements BotFactory {
-
-    @Nonnull
-    private final PersistenceService persistenceService;
-    @Nonnull
-    private final ConfigService configService;
-
-    public NsBotFactory(
-            @Nonnull PersistenceService persistenceService
-            , @Nonnull ConfigService configService
-    ) {
-        this.persistenceService = persistenceService;
-        this.configService = configService;
-    }
 
     @Override
     @Nonnull
@@ -31,9 +17,9 @@ public class NsBotFactory implements BotFactory {
 
     @Override
     @Nonnull
-    public NsBot produce(@Nonnull BotConnector connector) {
-        var dao = new NsTrainStationDao(persistenceService);
-        var apiClient = new NsApiClient(configService, HttpClient.newHttpClient());
+    public NsBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
+        var dao = new NsTrainStationDao(serviceContainer.getPersistenceService());
+        var apiClient = new NsApiClient(serviceContainer.getConfigService(), HttpClient.newHttpClient());
         var service = new NsService(dao, apiClient);
         return new NsBot(connector, service);
     }

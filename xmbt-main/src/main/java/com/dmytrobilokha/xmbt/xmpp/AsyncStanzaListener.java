@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.xmpp;
 
-import com.dmytrobilokha.xmbt.api.TextMessage;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.packet.Message;

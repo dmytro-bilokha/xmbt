@@ -1,8 +1,8 @@
 package com.dmytrobilokha.xmbt.command.list;
 
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.Response;
-import com.dmytrobilokha.xmbt.api.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Response;
+import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
 import com.dmytrobilokha.xmbt.command.Command;
 import com.dmytrobilokha.xmbt.manager.BotRegistry;
 

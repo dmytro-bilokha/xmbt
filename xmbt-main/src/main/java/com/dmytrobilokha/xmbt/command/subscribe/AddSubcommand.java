@@ -1,10 +1,10 @@
 package com.dmytrobilokha.xmbt.command.subscribe;
 
-import com.dmytrobilokha.xmbt.api.Request;
-import com.dmytrobilokha.xmbt.api.RequestMessage;
-import com.dmytrobilokha.xmbt.api.Response;
-import com.dmytrobilokha.xmbt.api.ResponseMessage;
-import com.dmytrobilokha.xmbt.api.TextMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Request;
+import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
+import com.dmytrobilokha.xmbt.api.messaging.Response;
+import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
 import com.dmytrobilokha.xmbt.command.InvalidUserInputException;
 import com.dmytrobilokha.xmbt.command.Subcommand;
 import com.dmytrobilokha.xmbt.dictionary.FuzzyDictionary;

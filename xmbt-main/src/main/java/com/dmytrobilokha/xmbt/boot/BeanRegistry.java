@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ class BeanRegistry {
                 if (serviceBean != null) {
                     initialized = true;
                     servicesMap.put(serviceClass, serviceBean);
+                    Arrays.stream(serviceClass.getInterfaces()).forEach(i -> servicesMap.put(i, serviceBean));
                     serviceClassIterator.remove();
                 }
             }

@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.fs;
 
-import com.dmytrobilokha.xmbt.ThrowingConsumer;
+import com.dmytrobilokha.xmbt.api.service.ThrowingConsumer;
 
 import javax.annotation.Nonnull;
 import java.io.BufferedInputStream;

@@ -11,6 +11,8 @@
 
     <modules>
         <module>xmbt-main</module>
+        <module>xmbt-bot-echo</module>
+        <module>xmbt-bot-null</module>
         <module>xmbt-bot-sysinfo</module>
         <module>xmbt-app</module>
     </modules>
@@ -49,6 +51,18 @@
             <dependency>
                 <groupId>com.dmytrobilokha</groupId>
                 <artifactId>xmbt-main</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <type>jar</type>
+            </dependency>
+            <dependency>
+                <groupId>com.dmytrobilokha</groupId>
+                <artifactId>xmbt-bot-echo</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <type>jar</type>
+            </dependency>
+            <dependency>
+                <groupId>com.dmytrobilokha</groupId>
+                <artifactId>xmbt-bot-null</artifactId>
                 <version>1.0-SNAPSHOT</version>
                 <type>jar</type>
             </dependency>
