@@ -6,6 +6,8 @@ import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
 import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
 import com.dmytrobilokha.xmbt.api.service.ServiceContainer;
 import com.dmytrobilokha.xmbt.boot.Cleaner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -19,6 +21,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.dmytrobilokha.xmbt.manager.BotManager.BOT_NAME_PREFIX;
 
 public class BotRegistry {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BotRegistry.class);
 
     @Nonnull
     private final Cleaner cleaner;
@@ -38,14 +42,19 @@ public class BotRegistry {
 
     void startBots(@Nonnull Collection<BotFactory> botFactories) {
         for (BotFactory botFactory : botFactories) {
-            var botName = BOT_NAME_PREFIX + botFactory.getBotName();
-            var toBotQueue = new LinkedBlockingQueue<RequestMessage>();
-            toBotQueuesMap.put(botName, toBotQueue);
-            var messageQueueClient = new BotConnector(toBotQueue, fromBotsMessageQueue);
-            var botThread = new Thread(botFactory.produce(messageQueueClient, serviceContainer));
-            botThread.setName(botName);
-            cleaner.registerThread(botThread);
-            botThread.start();
+            var botName = "?";
+            try {
+                botName = BOT_NAME_PREFIX + botFactory.getBotName();
+                var toBotQueue = new LinkedBlockingQueue<RequestMessage>();
+                toBotQueuesMap.put(botName, toBotQueue);
+                var messageQueueClient = new BotConnector(toBotQueue, fromBotsMessageQueue);
+                var botThread = new Thread(botFactory.produce(messageQueueClient, serviceContainer));
+                botThread.setName(botName);
+                cleaner.registerThread(botThread);
+                botThread.start();
+            } catch (RuntimeException ex) {
+                LOG.error("Failed to initialize bot '{}', skip it", botName, ex);
+            }
         }
     }
 

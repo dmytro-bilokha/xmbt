@@ -8,4 +8,8 @@
         <!-- Spotbugs throws false errors here -->
         <Class name="com.dmytrobilokha.xmbt.bot.sysinfo.SysinfoBot" />
     </Match>
+    <Match>
+        <!-- Spotbugs sees redundant nullchecks in try-with-resources blocks using var keyword -->
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE" />
+    </Match>
 </FindBugsFilter>

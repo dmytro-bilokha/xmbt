@@ -34,6 +34,10 @@
             <groupId>com.dmytrobilokha</groupId>
             <artifactId>xmbt-bot-sysinfo</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dmytrobilokha</groupId>
+            <artifactId>xmbt-bot-wg</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
