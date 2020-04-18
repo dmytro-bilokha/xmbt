@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # PROVIDE: xmbt
-# REQUIRE: LOGIN
+# REQUIRE: NETWORKING SERVERS mysql
 # KEYWORD: shutdown
 #
 # Add the following lines to /etc/rc.conf.local or /etc/rc.conf
