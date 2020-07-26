@@ -7,4 +7,5 @@ module xmbt.bot.webgateway {
     requires xmbt.main;
     requires jsr305;
     requires jdk.httpserver;
+    requires org.apache.commons.text;
 }

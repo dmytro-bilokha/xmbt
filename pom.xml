@@ -31,6 +31,7 @@
         <mockito.version>3.0.0</mockito.version>
         <h2.version>1.4.199</h2.version>
         <jsr305.version>3.0.2</jsr305.version>
+        <apache.text.version>1.9</apache.text.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M3</maven.surefire.plugin.version>
@@ -136,6 +137,11 @@
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
                 <version>${hikari.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>${apache.text.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>

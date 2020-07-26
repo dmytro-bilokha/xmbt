@@ -4,8 +4,10 @@ import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
 import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
 import com.dmytrobilokha.xmbt.api.messaging.Response;
 import com.dmytrobilokha.xmbt.api.messaging.ResponseMessage;
+import com.dmytrobilokha.xmbt.api.messaging.TextMessage;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -14,7 +16,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 class WebRequestHandler implements HttpHandler {
@@ -61,13 +62,12 @@ class WebRequestHandler implements HttpHandler {
 
     private void doGet(@Nonnull HttpExchange exchange) throws IOException {
         String pathKey = extractPathKey(exchange);
-        Optional<String> userAddress = Optional.ofNullable(pathKeyToImRequestMap.get(pathKey))
-                .map(rm -> rm.getTextMessage().getAddress());
-        if (userAddress.isEmpty()) {
+        RequestMessage originalRequest = pathKeyToImRequestMap.get(pathKey);
+        if (originalRequest == null) {
             sendError(HttpURLConnection.HTTP_NOT_FOUND, "The URL you requested doesn't exist.", exchange);
             return;
         }
-        sendMessageForm(exchange, userAddress.get());
+        sendMessageForm(exchange, originalRequest.getTextMessage());
     }
 
     private void doPost(@Nonnull HttpExchange exchange) throws IOException {
@@ -90,7 +90,7 @@ class WebRequestHandler implements HttpHandler {
             sendError(HttpURLConnection.HTTP_INTERNAL_ERROR, "Failed to send a message, the queue is full", exchange);
             return;
         }
-        sendMessageForm(exchange, request.getTextMessage().getAddress());
+        sendMessageForm(exchange, request.getTextMessage());
     }
 
     @Nonnull
@@ -111,8 +111,13 @@ class WebRequestHandler implements HttpHandler {
         sendResponse(errorCode, MessageFormat.format(errorPageTemplate, errorMessage), exchange);
     }
 
-    private void sendMessageForm(@Nonnull HttpExchange exchange, @Nonnull String user) throws IOException {
-        sendResponse(HttpURLConnection.HTTP_OK, MessageFormat.format(formPageTemplate, user), exchange);
+    private void sendMessageForm(
+            @Nonnull HttpExchange exchange, @Nonnull TextMessage originalMessage) throws IOException {
+        var originalSender = originalMessage.getAddress();
+        var escapedMessageText = StringEscapeUtils.escapeHtml4(originalMessage.getText());
+        sendResponse(HttpURLConnection.HTTP_OK
+                , MessageFormat.format(formPageTemplate, originalSender, escapedMessageText), exchange
+        );
     }
 
     private void sendResponse(

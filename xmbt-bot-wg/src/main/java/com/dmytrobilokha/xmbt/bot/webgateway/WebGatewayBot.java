@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +32,8 @@ class WebGatewayBot implements Runnable {
     private final ConfigService configService;
     @Nonnull
     private final SecureRandom secureRandom;
+    @Nonnull
+    private final Map<String, String> userToPathKeyMap;
 
     WebGatewayBot(
             @Nonnull ConcurrentHashMap<String, RequestMessage> pathKeyToImRequestMap
@@ -43,6 +46,7 @@ class WebGatewayBot implements Runnable {
         this.webServer = webServer;
         this.configService = configService;
         this.secureRandom = SecureRandom.getInstanceStrong();
+        this.userToPathKeyMap = new HashMap<>();
     }
 
     @Override
@@ -52,9 +56,14 @@ class WebGatewayBot implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
                 RequestMessage incomingMessage = imMessageBus.getBlocking();
                 LOG.debug("Got from queue incoming {}", incomingMessage);
-                String pathKey = Long.toHexString(secureRandom.nextLong());
+                var messageText = incomingMessage.getTextMessage().getText();
+                var pathKey = userToPathKeyMap.get(incomingMessage.getTextMessage().getAddress());
+                if (messageText.isBlank() || pathKey == null) {
+                    pathKey = Long.toHexString(secureRandom.nextLong());
+                }
                 if (incomingMessage.getRequest() == Request.RESPOND) {
                     pathKeyToImRequestMap.put(pathKey, incomingMessage);
+                    userToPathKeyMap.put(incomingMessage.getTextMessage().getAddress(), pathKey);
                 }
                 imMessageBus.sendBlocking(new ResponseMessage(
                         incomingMessage
