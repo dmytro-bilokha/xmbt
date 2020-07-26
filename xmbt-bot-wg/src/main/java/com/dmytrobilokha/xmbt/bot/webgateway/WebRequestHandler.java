@@ -90,7 +90,15 @@ class WebRequestHandler implements HttpHandler {
             sendError(HttpURLConnection.HTTP_INTERNAL_ERROR, "Failed to send a message, the queue is full", exchange);
             return;
         }
-        sendMessageForm(exchange, request.getTextMessage());
+        sendSelfRedirect(exchange);
+    }
+
+    private void sendSelfRedirect(@Nonnull HttpExchange exchange) throws IOException {
+        exchange.getResponseHeaders().add("Location", exchange.getRequestURI().toString());
+        exchange.sendResponseHeaders(HttpURLConnection.HTTP_SEE_OTHER, 0);
+        var out = exchange.getResponseBody();
+        out.flush();
+        out.close();
     }
 
     @Nonnull
