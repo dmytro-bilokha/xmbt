@@ -11,4 +11,5 @@ public interface FuzzyDictionary<T> {
 
     void clear();
 
+    int size();
 }

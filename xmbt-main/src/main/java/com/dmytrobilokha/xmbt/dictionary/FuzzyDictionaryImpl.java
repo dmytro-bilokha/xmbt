@@ -55,6 +55,11 @@ public class FuzzyDictionaryImpl<T> implements FuzzyDictionary<T> {
         fuzzyMatchStore.clear();
     }
 
+    @Override
+    public int size() {
+        return exactMatchStore.size();
+    }
+
     private class Phrase<T> {
 
         final T phraseObject;

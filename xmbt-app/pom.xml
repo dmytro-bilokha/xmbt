@@ -38,6 +38,10 @@
             <groupId>com.dmytrobilokha</groupId>
             <artifactId>xmbt-bot-wg</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dmytrobilokha</groupId>
+            <artifactId>xmbt-bot-rain</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
