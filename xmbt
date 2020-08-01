@@ -69,7 +69,7 @@ extra_commands="status"
 
 xmbt_start() {
     daemon -o "${xmbt_log_dir}/xmbt.out" -p "${xmbt_pid_file}" -P "${xmbt_superviser_pid_file}" -u "${xmbt_user}"\
-        java -Dconfig.file="${xmbt_config_file}" -Dlog.file="${xmbt_log_file}" -Dlog.level="${xmbt_log_level}"\
+        java ${xmbt_java_opts} -Dconfig.file="${xmbt_config_file}" -Dlog.file="${xmbt_log_file}" -Dlog.level="${xmbt_log_level}"\
         --module-path /usr/local/xmbt/modules --class-path /usr/local/xmbt/class-path/xpp3-1.1.4c.jar -m xmbt.main/com.dmytrobilokha.xmbt.boot.Loader
     return $?
 }
