@@ -12,9 +12,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Iterator;
 
 public class RainBotFactory implements BotFactory {
+
+    private static final int COLUMNS_IN_CITIES_FILE = 3;
 
     @Override
     @Nonnull
@@ -27,7 +31,11 @@ public class RainBotFactory implements BotFactory {
     public RainBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
         return new RainBot(
                 connector
-                , new BuienRadarApiClient(HttpClient.newHttpClient())
+                , new BuienRadarApiClient(HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(10))
+                .build())
                 , initDictionary(serviceContainer)
         );
     }
@@ -38,18 +46,18 @@ public class RainBotFactory implements BotFactory {
                 .getFuzzyDictionaryFactory()
                 .produceWithLatinAlphabet();
         try (InputStream csvStream = this.getClass().getModule().getResourceAsStream("NL_cities.csv");
-             Reader reader = new InputStreamReader(csvStream);
+             Reader reader = new InputStreamReader(csvStream, StandardCharsets.UTF_8);
              BufferedReader csvReader = new BufferedReader(reader);
         ) {
             for (Iterator<String> iterator = csvReader.lines().iterator(); iterator.hasNext();) {
-               var line = iterator.next().strip();
-               if (!line.isBlank()) {
-                   String[] data = line.split(",");
-                   if (data.length != 3) {
-                       throw new IllegalStateException("Non valid cites CSV line: " + line);
-                   }
-                   cityDictionary.put(data[0], new City(data[0], data[1], data[2]));
-               }
+                var line = iterator.next().strip();
+                if (!line.isBlank()) {
+                    String[] data = line.split(",");
+                    if (data.length != COLUMNS_IN_CITIES_FILE) {
+                        throw new IllegalStateException("Non valid cites CSV line: " + line);
+                    }
+                    cityDictionary.put(data[0], new City(data[0], data[1], data[2]));
+                }
             }
             if (cityDictionary.size() == 0) {
                 throw new IllegalStateException("Failed to load cities with GPS coordinates from the resource");

@@ -22,8 +22,6 @@
     <rule ref="category/java/bestpractices.xml/ConstantsInInterface" />
     <!-- Default should be last inside a switch operator -->
     <rule ref="category/java/bestpractices.xml/DefaultLabelNotLastInSwitchStmt" />
-    <!-- Prefer forEach loop if possible -->
-    <rule ref="category/java/bestpractices.xml/ForLoopCanBeForeach" />
     <!-- Use interfaces, not collection classes -->
     <rule ref="category/java/bestpractices.xml/LooseCoupling" />
     <!-- Don't return internal array -->

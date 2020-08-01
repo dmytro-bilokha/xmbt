@@ -40,7 +40,12 @@ class RainBot implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
                 RequestMessage incomingMessage = messageQueueClient.getBlocking();
                 LOG.debug("Got from queue incoming {}", incomingMessage);
-                processRequest(incomingMessage);
+                try {
+                    processRequest(incomingMessage);
+                } catch (RuntimeException ex) {
+                    LOG.error("Unexpected exception during processing {}", incomingMessage, ex);
+                    sendInternalErrorResponse(incomingMessage, "Unexpected internal error");
+                }
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -72,7 +77,7 @@ class RainBot implements Runnable {
                 .append(forecast.getStartTime())
                 .append('|');
         String[] rainSymbols = new String[]{
-                "_", "\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"};
+            "_", "\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"};
         for (int level : forecast.getPrecipitationLevel()) {
             fb.append(rainSymbols[Math.min(rainSymbols.length - 1, Math.max(0, rainSymbols.length * level / 256))]);
         }
