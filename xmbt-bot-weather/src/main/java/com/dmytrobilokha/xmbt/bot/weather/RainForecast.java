@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.bot.rain;
+package com.dmytrobilokha.xmbt.bot.weather;
 
 import javax.annotation.Nonnull;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.bot.rain;
+package com.dmytrobilokha.xmbt.bot.weather;
 
 import com.dmytrobilokha.xmbt.api.bot.BotFactory;
 import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
@@ -16,26 +16,38 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Iterator;
 
-public class RainBotFactory implements BotFactory {
+public class WeatherBotFactory implements BotFactory {
 
     private static final int COLUMNS_IN_CITIES_FILE = 3;
 
     @Override
     @Nonnull
     public String getBotName() {
-        return "r";
+        return "wr";
     }
 
     @Override
     @Nonnull
-    public RainBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
-        return new RainBot(
-                connector
-                , new BuienRadarApiClient(HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
+    public WeatherBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
+        var weerliveApiClient = new WeerliveApiClient(
+                serviceContainer.getConfigService()
+                , HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(10))
-                .build())
+                .connectTimeout(Duration.ofSeconds(5))
+                .build()
+        );
+        var buienradarApiClient = new BuienradarApiClient(
+                serviceContainer.getConfigService()
+                , HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(5))
+                .build());
+        var weatherService = new WeatherService(weerliveApiClient, buienradarApiClient);
+        return new WeatherBot(
+                connector
+                , weatherService
                 , initDictionary(serviceContainer)
         );
     }
@@ -59,11 +71,11 @@ public class RainBotFactory implements BotFactory {
                     cityDictionary.put(data[0], new City(data[0], data[1], data[2]));
                 }
             }
-            if (cityDictionary.size() == 0) {
-                throw new IllegalStateException("Failed to load cities with GPS coordinates from the resource");
-            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load cities with GPS coordinates from the resource", e);
+        }
+        if (cityDictionary.size() == 0) {
+            throw new IllegalStateException("Failed to load cities with GPS coordinates from the resource");
         }
         return cityDictionary;
     }

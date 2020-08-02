@@ -40,7 +40,7 @@
         </dependency>
         <dependency>
             <groupId>com.dmytrobilokha</groupId>
-            <artifactId>xmbt-bot-rain</artifactId>
+            <artifactId>xmbt-bot-weather</artifactId>
         </dependency>
     </dependencies>
 

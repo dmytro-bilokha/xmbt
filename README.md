@@ -18,11 +18,13 @@ The application consists of:
 
  * `xmbt-bot-ns` - a bot which plans train trips with the [Netherlands railroad](https://ns.nl).
 
- * `xmbt-bot-rain` - a bot provides rain forecast for the next 2 hours for a given city in the Netherlands.
+ * `xmbt-bot-weather` - a bot provides weather report for a given city in the Netherlands.
  
  * `xmbt` - a script to use XMBT as a FreeBSD daemon.
 
 ## TODO: more info on commands, each bot, deployment, environment configuration, etc.
+
+## TODO: describe properties file
 
 ## Requirements
 
@@ -32,9 +34,10 @@ The application consists of:
 
 ## Attributions
 
-This application uses following content and services requiring attribution:
+The application uses following 3rd party content and services:
 
  * [Buitenradar API](https://www.buienradar.nl/) to fetch rain forecast.
 
  * [World Cities DB](https://simplemaps.com/data/world-cities) to find GPS coordinates of the Dutch cities.
-
+ 
+ * [Weerlive KNMI API](http://weerlive.nl/delen.php) to fetch weather report and forecast

@@ -16,7 +16,7 @@
         <module>xmbt-bot-null</module>
         <module>xmbt-bot-sysinfo</module>
         <module>xmbt-bot-wg</module>
-        <module>xmbt-bot-rain</module>
+        <module>xmbt-bot-weather</module>
         <module>xmbt-app</module>
     </modules>
 
@@ -91,7 +91,7 @@
             </dependency>
             <dependency>
                 <groupId>com.dmytrobilokha</groupId>
-                <artifactId>xmbt-bot-rain</artifactId>
+                <artifactId>xmbt-bot-weather</artifactId>
                 <version>1.0-SNAPSHOT</version>
                 <type>jar</type>
             </dependency>

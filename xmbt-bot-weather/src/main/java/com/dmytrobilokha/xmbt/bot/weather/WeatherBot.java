@@ -1,4 +1,4 @@
-package com.dmytrobilokha.xmbt.bot.rain;
+package com.dmytrobilokha.xmbt.bot.weather;
 
 import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
 import com.dmytrobilokha.xmbt.api.messaging.RequestMessage;
@@ -13,24 +13,24 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class RainBot implements Runnable {
+class WeatherBot implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RainBot.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WeatherBot.class);
 
     @Nonnull
     private final MessageBus messageQueueClient;
     @Nonnull
-    private final BuienRadarApiClient apiClient;
+    private final WeatherService weatherService;
     @Nonnull
     private final FuzzyDictionary<City> citiesDictionary;
 
-    RainBot(
+    WeatherBot(
             @Nonnull MessageBus messageQueueClient
-            , @Nonnull BuienRadarApiClient apiClient
+            , @Nonnull WeatherService weatherService
             , @Nonnull FuzzyDictionary<City> citiesDictionary
     ) {
         this.messageQueueClient = messageQueueClient;
-        this.apiClient = apiClient;
+        this.weatherService = weatherService;
         this.citiesDictionary = citiesDictionary;
     }
 
@@ -40,12 +40,7 @@ class RainBot implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
                 RequestMessage incomingMessage = messageQueueClient.getBlocking();
                 LOG.debug("Got from queue incoming {}", incomingMessage);
-                try {
-                    processRequest(incomingMessage);
-                } catch (RuntimeException ex) {
-                    LOG.error("Unexpected exception during processing {}", incomingMessage, ex);
-                    sendInternalErrorResponse(incomingMessage, "Unexpected internal error");
-                }
+                processRequest(incomingMessage);
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -58,30 +53,12 @@ class RainBot implements Runnable {
         if (city == null) {
             return;
         }
-        RainForecast forecast;
-        try {
-            forecast = apiClient.getForecast(city);
-        } catch (RainApiException ex) {
-            LOG.error("Failed to fetch the rain forecast for {}", city, ex);
-            sendInternalErrorResponse(incomingMessage, "Failed to fetch the rain forecast");
+        var weatherReport = weatherService.fetchWeatherReport(city);
+        if (weatherReport == null) {
+            sendInternalErrorResponse(incomingMessage, "Failed to fetch the weather report");
             return;
         }
-        sendOkResponse(incomingMessage, formatForecast(city, forecast));
-    }
-
-    @Nonnull
-    private String formatForecast(@Nonnull City city, @Nonnull RainForecast forecast) {
-        StringBuilder fb = new StringBuilder(city.getName())
-                .append(":")
-                .append(System.lineSeparator())
-                .append(forecast.getStartTime())
-                .append('|');
-        String[] rainSymbols = new String[]{
-            "_", "\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"};
-        for (int level : forecast.getPrecipitationLevel()) {
-            fb.append(rainSymbols[Math.min(rainSymbols.length - 1, Math.max(0, rainSymbols.length * level / 256))]);
-        }
-        return fb.append('|').append(forecast.getEndTime()).toString();
+        sendOkResponse(incomingMessage, weatherReport);
     }
 
     @CheckForNull

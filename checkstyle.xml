@@ -170,6 +170,9 @@
         <!-- Java arrays style -->
         <module name="ArrayTypeStyle"/>
 
+        <!-- No escaped unicode -->
+        <module name="AvoidEscapedUnicodeCharacters"/>
+
         <!-- Comments should be indented like a code -->
         <module name="CommentsIndentation"/>
 

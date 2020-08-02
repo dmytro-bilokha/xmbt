@@ -8,12 +8,12 @@ public abstract class ConfigProperty {
     @Nonnull
     protected final String stringValue;
 
-    protected ConfigProperty(
+    public ConfigProperty(
             @Nonnull String key, @Nonnull Map<String, String> allProperties, @Nonnull String defaultValue) {
         this.stringValue = allProperties.getOrDefault(key, defaultValue);
     }
 
-    protected ConfigProperty(
+    public ConfigProperty(
             @Nonnull String key, @Nonnull Map<String, String> allProperties) throws InvalidConfigException {
         String valueFromProperties = allProperties.get(key);
         if (valueFromProperties == null || valueFromProperties.isBlank()) {
