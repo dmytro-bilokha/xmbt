@@ -18,7 +18,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbException;
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,6 +29,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @NotThreadSafe
@@ -169,13 +171,15 @@ class NsApiClient {
                 .uri(URI.create(fullApiUrl))
                 .header("Ocp-Apim-Subscription-Key", apiKey)
                 .headers("Accept", "application/json")
-                .timeout(Duration.ofSeconds(120))
+                .timeout(Duration.ofSeconds(5))
                 .build();
         HttpResponse<String> response;
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (IOException ex) {
-            throw new NsApiException("Failed to issue get request to the NS API endpoint '"
+            response = httpClient
+                    .sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+                    .get(5, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException ex) {
+            throw new NsApiException("Failed to fetch data from the NS API endpoint '"
                     + fullApiUrl + "'", ex);
         }
         var responseString = response.body();

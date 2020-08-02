@@ -7,6 +7,7 @@ import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
 
 import javax.annotation.Nonnull;
 import java.net.http.HttpClient;
+import java.time.Duration;
 
 public class NsBotFactory implements BotFactory {
 
@@ -20,7 +21,14 @@ public class NsBotFactory implements BotFactory {
     @Nonnull
     public NsBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
         var dao = new NsTrainStationDao(serviceContainer.getPersistenceService());
-        var apiClient = new NsApiClient(serviceContainer.getConfigService(), HttpClient.newHttpClient());
+        var apiClient = new NsApiClient(
+                serviceContainer.getConfigService()
+                , HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(5))
+                .build()
+        );
         FuzzyDictionary<NsTrainStation> stationsDictionary = serviceContainer
                 .getFuzzyDictionaryFactory()
                 .produceWithLatinAlphabet();
