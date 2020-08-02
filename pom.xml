@@ -35,12 +35,12 @@
         <apache.text.version>1.9</apache.text.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-        <maven.surefire.plugin.version>3.0.0-M3</maven.surefire.plugin.version>
-        <maven.checkstyle.plugin.version>3.1.0</maven.checkstyle.plugin.version>
-        <maven.pmd.plugin.version>3.12.0</maven.pmd.plugin.version>
-        <maven.spotbugs.plugin.version>3.1.12.2</maven.spotbugs.plugin.version>
-        <maven.enforcer.plugin.version>3.0.0-M2</maven.enforcer.plugin.version>
-        <maven.jar.plugin.version>3.1.2</maven.jar.plugin.version>
+        <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <maven.pmd.plugin.version>3.13.0</maven.pmd.plugin.version>
+        <maven.spotbugs.plugin.version>4.0.4</maven.spotbugs.plugin.version>
+        <maven.enforcer.plugin.version>3.0.0-M3</maven.enforcer.plugin.version>
+        <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
         <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
         <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
         <maven.clean.plugin.version>3.1.0</maven.clean.plugin.version>
@@ -253,6 +253,9 @@
                                 <banDuplicatePomDependencyVersions/>
                                 <dependencyConvergence/>
                                 <requireUpperBoundDeps/>
+                                <requireMavenVersion>
+                                    <version>3.6.3</version>
+                                </requireMavenVersion>
                             </rules>
                             <fail>true</fail>
                         </configuration>
