@@ -177,7 +177,7 @@ class NsApiClient {
         try {
             response = httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-                    .get(5, TimeUnit.SECONDS);
+                    .get(10, TimeUnit.SECONDS);
         } catch (ExecutionException | TimeoutException ex) {
             throw new NsApiException("Failed to fetch data from the NS API endpoint '"
                     + fullApiUrl + "'", ex);

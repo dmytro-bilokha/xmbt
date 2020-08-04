@@ -26,7 +26,7 @@ public class NsBotFactory implements BotFactory {
                 , HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(5))
+                .connectTimeout(Duration.ofSeconds(10))
                 .build()
         );
         FuzzyDictionary<NsTrainStation> stationsDictionary = serviceContainer

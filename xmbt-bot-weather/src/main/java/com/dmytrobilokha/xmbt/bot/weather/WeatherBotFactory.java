@@ -39,7 +39,7 @@ public class WeatherBotFactory implements BotFactory {
                 , HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(5))
+                .connectTimeout(Duration.ofSeconds(10))
                 .build()
         );
         var buienradarApiClient = new BuienradarApiClient(
@@ -60,9 +60,9 @@ public class WeatherBotFactory implements BotFactory {
     private CloseableHttpClient produceApacheHttpClient() {
         var requestConfig = RequestConfig
                 .copy(RequestConfig.DEFAULT)
-                .setConnectionRequestTimeout(5L, TimeUnit.SECONDS)
-                .setConnectTimeout(5L, TimeUnit.SECONDS)
-                .setResponseTimeout(5L, TimeUnit.SECONDS)
+                .setConnectionRequestTimeout(10L, TimeUnit.SECONDS)
+                .setConnectTimeout(10L, TimeUnit.SECONDS)
+                .setResponseTimeout(10L, TimeUnit.SECONDS)
                 .setConnectionKeepAlive(TimeValue.ofSeconds(10))
                 .build();
         return HttpClients.custom()

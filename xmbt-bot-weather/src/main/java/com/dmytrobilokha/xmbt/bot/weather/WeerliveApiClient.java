@@ -61,7 +61,7 @@ class WeerliveApiClient {
         try {
             response = httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-                    .get(5L, TimeUnit.SECONDS);
+                    .get(10L, TimeUnit.SECONDS);
         } catch (ExecutionException | TimeoutException ex) {
             throw new WeatherApiException("Failed to get data from the Weerlive API endpoint '"
                     + fullApiUrl + "'", ex);
