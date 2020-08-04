@@ -289,7 +289,7 @@
     <!-- No new String().getClass -->
     <rule ref="category/java/errorprone.xml/InstantiationToGetClass" />
     <!-- Log message should match number of parameters -->
-    <rule ref="category/java/errorprone.xml/InvalidSlf4jMessageFormat" />
+    <rule ref="category/java/errorprone.xml/InvalidLogMessageFormat" />
     <!-- No jumbled loop increments -->
     <rule ref="category/java/errorprone.xml/JumbledIncrementer" />
     <!-- No method names same as its class -->
