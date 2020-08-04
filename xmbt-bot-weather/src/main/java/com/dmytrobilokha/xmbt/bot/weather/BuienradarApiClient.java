@@ -2,24 +2,22 @@ package com.dmytrobilokha.xmbt.bot.weather;
 
 import com.dmytrobilokha.xmbt.api.service.config.ConfigService;
 import com.dmytrobilokha.xmbt.bot.weather.config.BuienradarApiUrlProperty;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 class BuienradarApiClient {
 
@@ -29,11 +27,12 @@ class BuienradarApiClient {
     @Nonnull
     private final ConfigService configService;
     @Nonnull
-    private final HttpClient httpClient;
+    private final Supplier<CloseableHttpClient> httpClientSupplier;
 
-    BuienradarApiClient(@Nonnull ConfigService configService, @Nonnull HttpClient httpClient) {
+    BuienradarApiClient(
+            @Nonnull ConfigService configService, @Nonnull Supplier<CloseableHttpClient> httpClientSupplier) {
         this.configService = configService;
-        this.httpClient = httpClient;
+        this.httpClientSupplier = httpClientSupplier;
     }
 
     @Nonnull
@@ -46,34 +45,41 @@ class BuienradarApiClient {
     }
 
     @Nonnull
-    private String queryRainForecastApi(@Nonnull City city) throws WeatherApiException, InterruptedException {
+    private String queryRainForecastApi(@Nonnull City city) throws WeatherApiException {
         var fullApiUrl = configService.getProperty(BuienradarApiUrlProperty.class).getStringValue()
                 + "?lat=" + city.getLat() + "&lon=" + city.getLon();
         LOG.debug("Going to send a request to '{}'", fullApiUrl);
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(fullApiUrl))
-                //Trying to mimic curl to avoid hanging connections
-                .headers("Accept", "*/*", "User-Agent", "curl/7.71.1")
-                .timeout(Duration.ofSeconds(5))
-                .build();
-        HttpResponse<String> response;
-        try {
-            var asyncResponse = httpClient.sendAsync(
-                    request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            response = asyncResponse.get(10L, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException ex) {
-            throw new WeatherApiException("Failed to get response from the BuienRadar API endpoint '"
+        try (var httpClient = httpClientSupplier.get()) {
+            var httpGet = new HttpGet(fullApiUrl);
+            //Trying to mimic curl to avoid hanging connections
+            httpGet.addHeader("Accept", "*/*");
+            httpGet.addHeader("User-Agent", "curl/7.71.1");
+            return fetchApiResponse(httpClient, httpGet);
+        } catch (IOException ex) {
+            throw new WeatherApiException("Failed to close http client after querying the Buienradar API endpoint '"
                     + fullApiUrl + "'", ex);
         }
-        var responseString = response.body();
-        if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-            throw new WeatherApiException("Got bad response code '" + response.statusCode()
-                    + "' from the BuienRadar API url: '" + fullApiUrl + "'. Response body: '" + responseString + "'");
+    }
+
+    @Nonnull
+    private String fetchApiResponse(
+            @Nonnull CloseableHttpClient httpClient, @Nonnull HttpGet httpGet) throws WeatherApiException {
+        try (var response = httpClient.execute(httpGet)) {
+            if (response.getCode() != HttpURLConnection.HTTP_OK) {
+                throw new WeatherApiException("Got bad response code '" + response.getCode()
+                        + "' from the Buienradar API url: '" + httpGet.getRequestUri()
+                        + "'. Response reason: '" + response.getReasonPhrase() + "'");
+            }
+            var responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8, 500);
+            if (responseString == null || responseString.isBlank()) {
+                throw new WeatherApiException(
+                        "Got no text in the response from the Buienradar API url: '" + httpGet.getRequestUri());
+            }
+            return responseString;
+        } catch (ParseException | IOException ex) {
+            throw new WeatherApiException(
+                    "Unable to fetch the response from the Buienradar API url: '" + httpGet.getRequestUri(), ex);
         }
-        if (responseString == null || responseString.isBlank()) {
-            throw new WeatherApiException("Got no text in the response from the BuienRadar API url: '" + fullApiUrl);
-        }
-        return responseString;
     }
 
     @Nonnull

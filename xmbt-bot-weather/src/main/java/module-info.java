@@ -9,4 +9,6 @@ module xmbt.bot.weather {
     requires jsr305;
     requires java.json.bind;
     requires java.net.http;
+    requires httpclient5;
+    requires httpcore5;
 }

@@ -4,6 +4,10 @@ import com.dmytrobilokha.xmbt.api.bot.BotFactory;
 import com.dmytrobilokha.xmbt.api.messaging.MessageBus;
 import com.dmytrobilokha.xmbt.api.service.ServiceContainer;
 import com.dmytrobilokha.xmbt.api.service.dictionary.FuzzyDictionary;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.TimeValue;
 
 import javax.annotation.Nonnull;
 import java.io.BufferedReader;
@@ -15,6 +19,7 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 public class WeatherBotFactory implements BotFactory {
 
@@ -39,17 +44,30 @@ public class WeatherBotFactory implements BotFactory {
         );
         var buienradarApiClient = new BuienradarApiClient(
                 serviceContainer.getConfigService()
-                , HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(5))
-                .build());
+                //For Buienradar API its better to use Apache HttpClient, because it handles hanging connections
+                //better and provides easy control of the keep-alive feature
+                , this::produceApacheHttpClient
+        );
         var weatherService = new WeatherService(weerliveApiClient, buienradarApiClient);
         return new WeatherBot(
                 connector
                 , weatherService
                 , initDictionary(serviceContainer)
         );
+    }
+
+    @Nonnull
+    private CloseableHttpClient produceApacheHttpClient() {
+        var requestConfig = RequestConfig
+                .copy(RequestConfig.DEFAULT)
+                .setConnectionRequestTimeout(5L, TimeUnit.SECONDS)
+                .setConnectTimeout(5L, TimeUnit.SECONDS)
+                .setResponseTimeout(5L, TimeUnit.SECONDS)
+                .setConnectionKeepAlive(TimeValue.ofSeconds(10))
+                .build();
+        return HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
     }
 
     @Nonnull

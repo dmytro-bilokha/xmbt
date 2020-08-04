@@ -33,6 +33,7 @@
         <h2.version>1.4.199</h2.version>
         <jsr305.version>3.0.2</jsr305.version>
         <apache.text.version>1.9</apache.text.version>
+        <apache.httpclient.version>5.0.1</apache.httpclient.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
@@ -150,6 +151,11 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-text</artifactId>
                 <version>${apache.text.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${apache.httpclient.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
