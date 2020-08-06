@@ -10,9 +10,9 @@ class RainForecast {
     @Nonnull
     private final String endTime;
     @Nonnull
-    private final List<Integer> precipitationLevel;
+    private final List<Double> precipitationLevel;
 
-    RainForecast(@Nonnull String startTime, @Nonnull String endTime, @Nonnull List<Integer> precipitationLevel) {
+    RainForecast(@Nonnull String startTime, @Nonnull String endTime, @Nonnull List<Double> precipitationLevel) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.precipitationLevel = List.copyOf(precipitationLevel);
@@ -29,7 +29,7 @@ class RainForecast {
     }
 
     @Nonnull
-    public List<Integer> getPrecipitationLevel() {
+    public List<Double> getPrecipitationLevel() {
         return precipitationLevel;
     }
 

@@ -9,8 +9,12 @@ import javax.annotation.Nonnull;
 
 class WeatherService {
 
+    private static final double NO_RAIN_LIMIT = 0.2;
+    private static final double LIGHT_RAIN_LIMIT = 2.5;
+    private static final double MODERATE_RAIN_LIMIT = 10.0;
+    private static final double HEAVY_RAIN_LIMIT = 50.0;
+
     private static final Logger LOG = LoggerFactory.getLogger(WeatherService.class);
-    private static final String[] RAIN_SYMBOLS = new String[]{" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
 
     @Nonnull
     private final WeerliveApiClient weerliveApiClient;
@@ -23,16 +27,16 @@ class WeatherService {
     }
 
     @CheckForNull
-    String fetchWeatherReport(@Nonnull City city) throws InterruptedException {
+    String fetchWeatherReport(@Nonnull City city) {
         LiveWeather weerliveResponse = null;
         try {
-            weerliveResponse = weerliveApiClient.fetchWeatherData(city);
+            weerliveResponse = weerliveApiClient.fetch(city);
         } catch (WeatherApiException e) {
             LOG.error("Failed to fetch weather report from the Weerlive API for {}", city, e);
         }
         RainForecast buienradarResponse = null;
         try {
-            buienradarResponse = buienradarApiClient.fetchRainForecast(city);
+            buienradarResponse = buienradarApiClient.fetch(city);
         } catch (WeatherApiException e) {
             LOG.error("Failed to fetch rain forecast from the BuienRadar API for {}", city, e);
         }
@@ -71,8 +75,23 @@ class WeatherService {
     @Nonnull
     private String buildBuienRadarReport(@Nonnull RainForecast forecast) {
         StringBuilder fb = new StringBuilder(forecast.getStartTime()).append('|');
-        for (int level : forecast.getPrecipitationLevel()) {
-            fb.append(RAIN_SYMBOLS[Math.min(RAIN_SYMBOLS.length - 1, Math.max(0, RAIN_SYMBOLS.length * level / 256))]);
+        for (double level : forecast.getPrecipitationLevel()) {
+            if (level < NO_RAIN_LIMIT) {
+                // x < 0.2 mm/h -> no rain
+                fb.append('_');
+            } else if (level < LIGHT_RAIN_LIMIT) {
+                // 0.2 < x < 2.5 mm/h -> light rain
+                fb.append('L');
+            } else if (level < MODERATE_RAIN_LIMIT) {
+                // 2.5 < x < 10 mm/h -> moderate rain
+                fb.append('M');
+            } else if (level < HEAVY_RAIN_LIMIT) {
+                // 10 < x < 50 mm/h -> heavy rain
+                fb.append('H');
+            } else {
+                // x > 50 mm/h -> violent rain
+                fb.append('V');
+            }
         }
         return fb.append('|').append(forecast.getEndTime()).toString();
     }

@@ -32,29 +32,29 @@ public class WeatherServiceTest {
     @DataProvider(name = "buienradarCases")
     public Object[][] getBuienradarCases() {
         return new Object[][]{
-                {" ", 0}
-                , {" ", 27}
-                , {"▁", 29}
-                , {"▁", 56}
-                , {"▂", 57}
-                , {" ▁▂▃▄▅▆▇█ ", 15, 30, 60, 90, 120, 150, 180, 210, 240, 20}
+                {"_", 0.1}
+                , {"L", 2.45}
+                , {"M", 8.8}
+                , {"H", 48.8}
+                , {"V", 57.0}
+                , {"_LMHVVHML_", 0.05, 2.4, 5.5, 11.0, 50.1, 60.1, 49.9, 9.99, 1.1, 0.01}
         };
     }
 
     @Test(dataProvider = "buienradarCases")
-    public void formatsRainForecast(String expectedLevelsString, Integer... precipitations) throws Exception {
+    public void formatsRainForecast(String expectedLevelsString, Double... precipitations) throws Exception {
         final var startTime = "12:34";
         final var endTime = "56:78";
         final var cityName = "testCity";
         final var expectedOutput = "Weather in " + cityName + "\n"
                 + startTime + '|' + expectedLevelsString + '|' + endTime;
-        Mockito.when(weerliveMock.fetchWeatherData(Mockito.any())).thenThrow(new WeatherApiException("test"));
+        Mockito.when(weerliveMock.fetch(Mockito.any())).thenThrow(new WeatherApiException("test"));
         var testForecast = new RainForecast(
                 startTime
                 , endTime
                 , Arrays.stream(precipitations).collect(Collectors.toList())
         );
-        Mockito.when(buienradarMock.fetchRainForecast(Mockito.any())).thenReturn(testForecast);
+        Mockito.when(buienradarMock.fetch(Mockito.any())).thenReturn(testForecast);
         Assert.assertEquals(service.fetchWeatherReport(new City(cityName, "", "")), expectedOutput);
     }
 

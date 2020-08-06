@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -36,16 +34,10 @@ public class WeatherBotFactory implements BotFactory {
     public WeatherBot produce(@Nonnull MessageBus connector, @Nonnull ServiceContainer serviceContainer) {
         var weerliveApiClient = new WeerliveApiClient(
                 serviceContainer.getConfigService()
-                , HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(10))
-                .build()
+                , this::produceApacheHttpClient
         );
         var buienradarApiClient = new BuienradarApiClient(
                 serviceContainer.getConfigService()
-                //For Buienradar API its better to use Apache HttpClient, because it handles hanging connections
-                //better and provides easy control of the keep-alive feature
                 , this::produceApacheHttpClient
         );
         var weatherService = new WeatherService(weerliveApiClient, buienradarApiClient);
@@ -60,9 +52,9 @@ public class WeatherBotFactory implements BotFactory {
     private CloseableHttpClient produceApacheHttpClient() {
         var requestConfig = RequestConfig
                 .copy(RequestConfig.DEFAULT)
-                .setConnectionRequestTimeout(10L, TimeUnit.SECONDS)
-                .setConnectTimeout(10L, TimeUnit.SECONDS)
-                .setResponseTimeout(10L, TimeUnit.SECONDS)
+                .setConnectionRequestTimeout(15L, TimeUnit.SECONDS)
+                .setConnectTimeout(15L, TimeUnit.SECONDS)
+                .setResponseTimeout(15L, TimeUnit.SECONDS)
                 .setConnectionKeepAlive(TimeValue.ofSeconds(10))
                 .build();
         return HttpClients.custom()

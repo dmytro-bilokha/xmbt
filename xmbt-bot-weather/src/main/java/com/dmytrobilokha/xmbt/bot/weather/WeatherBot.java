@@ -48,7 +48,7 @@ class WeatherBot implements Runnable {
         }
     }
 
-    private void processRequest(@Nonnull RequestMessage incomingMessage) throws InterruptedException {
+    private void processRequest(@Nonnull RequestMessage incomingMessage) {
         var city = findUniqueCity(incomingMessage);
         if (city == null) {
             return;
