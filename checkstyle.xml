@@ -167,7 +167,8 @@
         <!-- Avoid too complex code -->
         <module name="ClassFanOutComplexity">
             <property name="excludedPackages"
-                value="java.net, java.net.http, java.util, java.util.stream, java.time, java.time.format, javax.annotation"/>
+                value="java.net, java.net.http, java.util, java.util.stream, java.time, java.time.format, javax.annotation, java.util.function, javax.json.bind"/>
+            <property name="max" value="25"/>
         </module>
         <module name="CyclomaticComplexity"/>
         <module name="JavaNCSS"/>

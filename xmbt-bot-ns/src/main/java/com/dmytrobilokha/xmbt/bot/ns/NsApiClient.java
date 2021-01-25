@@ -9,6 +9,11 @@ import com.dmytrobilokha.xmbt.bot.ns.dto.TripInfoDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripLegDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripStationDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripsPayloadDto;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,20 +23,18 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbException;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @NotThreadSafe
@@ -46,19 +49,20 @@ class NsApiClient {
     @Nonnull
     private final ConfigService configService;
     @Nonnull
-    private final HttpClient httpClient;
+    private final Supplier<CloseableHttpClient> httpClientSupplier;
     @Nonnull
     private final Jsonb jsonb;
 
-    NsApiClient(@Nonnull ConfigService configService, @Nonnull HttpClient httpClient) {
+    NsApiClient(@Nonnull ConfigService configService, @Nonnull Supplier<CloseableHttpClient> httpClientSupplier) {
         this.configService = configService;
-        this.httpClient = httpClient;
+        this.httpClientSupplier = httpClientSupplier;
         this.jsonb = JsonbBuilder.create();
     }
 
     @Nonnull
     List<NsTrainStation> fetchAllNlStations() throws InterruptedException, NsApiException {
-        var stationsPayload = getDataFromApi(STATIONS_ENDPOINT, StationsPayloadDto.class);
+        var stationsPayload = getDataFromApi(
+                STATIONS_ENDPOINT, StationsPayloadDto.class, Collections.emptyMap());
         if (stationsPayload == null || stationsPayload.getPayload() == null) {
             throw new NsApiException("Got invalid response from stations info NS API");
         }
@@ -104,11 +108,12 @@ class NsApiClient {
     List<List<TripLeg>> fetchTripPlans(
             @Nonnull NsTrainStation origin
             , @Nonnull NsTrainStation destination
-    ) throws InterruptedException, NsApiException {
-        var queryUrl = TRIPS_ENDPOINT
-                + "?originEVACode=" + origin.getEvaCode()
-                + "&destinationEVACode=" + destination.getEvaCode();
-        var tripsPayload = getDataFromApi(queryUrl, TripsPayloadDto.class);
+    ) throws NsApiException {
+        var queryParams = Map.of(
+                "fromStation", origin.getName()
+                , "toStation", destination.getName()
+        );
+        var tripsPayload = getDataFromApi(TRIPS_ENDPOINT, TripsPayloadDto.class, queryParams);
         return mapTrips(tripsPayload);
     }
 
@@ -163,29 +168,34 @@ class NsApiClient {
 
     @CheckForNull
     private <T> T getDataFromApi(
-            @Nonnull String relativeUrl, @Nonnull Class<T> responseClass) throws InterruptedException, NsApiException {
-        String apiKey = configService.getProperty(NsApiKeyProperty.class).getStringValue();
-        String fullApiUrl = configService.getProperty(NsApiUrlProperty.class).getStringValue() + relativeUrl;
-        LOG.debug("Going to get data from the endpoint '{}'", fullApiUrl);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fullApiUrl))
-                .header("Ocp-Apim-Subscription-Key", apiKey)
-                .headers("Accept", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build();
-        HttpResponse<String> response;
+            @Nonnull String relativeEndpointUrl
+            , @Nonnull Class<T> responseClass
+            , @Nonnull Map<String, String> queryParams
+    ) throws NsApiException {
+        String fullEndpointUrl = configService.getProperty(NsApiUrlProperty.class).getStringValue()
+                + relativeEndpointUrl;
+        LOG.debug("Going to get data from the endpoint '{}'", fullEndpointUrl);
+        URI apiUri;
         try {
-            response = httpClient
-                    .sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-                    .get(10, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException ex) {
-            throw new NsApiException("Failed to fetch data from the NS API endpoint '"
-                    + fullApiUrl + "'", ex);
+            var uriBuilder = new URIBuilder(fullEndpointUrl);
+            for (Map.Entry<String, String> queryParam : queryParams.entrySet()) {
+                uriBuilder.addParameter(queryParam.getKey(), queryParam.getValue());
+            }
+            apiUri = uriBuilder.build();
+        } catch (URISyntaxException e) {
+            throw new NsApiException("Failed to build API URI from fullEndpointUrl=" + fullEndpointUrl
+                + ", queryParams=" + queryParams, e);
         }
-        var responseString = response.body();
-        if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-            throw new NsApiException("Got bad response code '" + response.statusCode()
-                    + "' from the NS API url: '" + fullApiUrl + "'. Response body: '" + responseString + "'");
+        var httpGet = new HttpGet(apiUri);
+        String apiKey = configService.getProperty(NsApiKeyProperty.class).getStringValue();
+        httpGet.addHeader("Ocp-Apim-Subscription-Key", apiKey);
+        httpGet.addHeader("Accept", "application/json");
+        String responseString;
+        try (var httpClient = httpClientSupplier.get()) {
+            responseString = fetchApiResponse(httpClient, httpGet);
+        } catch (IOException ex) {
+            throw new NsApiException("Failed to close http client after querying the API endpoint '"
+                    + fullEndpointUrl + "'", ex);
         }
         LOG.debug("Got response from the endpoint: '{}'", responseString);
         try {
@@ -194,6 +204,25 @@ class NsApiClient {
             return convertedResponse;
         } catch (JsonbException ex) {
             throw new NsApiException("Failed to convert response to JSON object", ex);
+        }
+    }
+
+    @Nonnull
+    private String fetchApiResponse(
+            @Nonnull CloseableHttpClient httpClient, @Nonnull HttpGet httpGet) throws NsApiException {
+        try (var response = httpClient.execute(httpGet)) {
+            if (response.getCode() != HttpURLConnection.HTTP_OK) {
+                throw new NsApiException("Got bad response code '" + response.getCode()
+                        + "' from the API url: '" + httpGet.getRequestUri()
+                        + "'. Response reason: '" + response.getReasonPhrase() + "'");
+            }
+            var responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8, 50000);
+            if (responseString == null || responseString.isBlank()) {
+                throw new NsApiException("Got no text in the response from the API url: '" + httpGet.getRequestUri());
+            }
+            return responseString;
+        } catch (ParseException | IOException ex) {
+            throw new NsApiException("Unable to fetch the response from the API url: '" + httpGet.getRequestUri(), ex);
         }
     }
 
