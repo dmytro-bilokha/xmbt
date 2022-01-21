@@ -30,7 +30,7 @@
         <hikari.version>3.4.3</hikari.version>
         <testng.version>7.3.0</testng.version>
         <mockito.version>3.4.6</mockito.version>
-        <h2.version>1.4.200</h2.version>
+        <h2.version>2.1.210</h2.version>
         <jsr305.version>3.0.2</jsr305.version>
         <apache.text.version>1.9</apache.text.version>
         <apache.httpclient.version>5.0.1</apache.httpclient.version>
