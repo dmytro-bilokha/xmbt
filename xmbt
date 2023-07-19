@@ -9,7 +9,7 @@
 #
 # xmbt_enable (bool):
 #   Set to NO by default.
-#   Set it to YES to enable payara. 
+#   Set it to YES to enable xmbt. 
 #
 # xmbt_java_home (string):
 #   Used to set JAVA_HOME (optional).
