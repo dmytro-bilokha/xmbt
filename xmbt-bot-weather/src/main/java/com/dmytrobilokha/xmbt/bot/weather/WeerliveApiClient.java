@@ -5,12 +5,12 @@ import com.dmytrobilokha.xmbt.bot.weather.config.WeerliveApiKeyProperty;
 import com.dmytrobilokha.xmbt.bot.weather.config.WeerliveApiUrlProperty;
 import com.dmytrobilokha.xmbt.bot.weather.dto.LiveWeather;
 import com.dmytrobilokha.xmbt.bot.weather.dto.WeerliveResponse;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.annotation.Nonnull;
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.json.bind.JsonbException;
 import java.util.function.Supplier;
 
 class WeerliveApiClient extends AbstractWeatherApiClient<LiveWeather> {
@@ -43,7 +43,7 @@ class WeerliveApiClient extends AbstractWeatherApiClient<LiveWeather> {
             convertedResponse = jsonb.fromJson(responseString, WeerliveResponse.class);
             log.debug("Converted response to JSON: '{}'", convertedResponse);
         } catch (JsonbException ex) {
-            throw new WeatherApiException("Failed to convert response to JSON object", ex);
+            throw new WeatherApiException("Failed to convert response to JSON object. Response: " + responseString, ex);
         }
         var liveWeatherList = convertedResponse.getLiveWeather();
         if (liveWeatherList == null || liveWeatherList.isEmpty()) {

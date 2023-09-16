@@ -21,26 +21,25 @@
     </modules>
 
     <properties>
-        <logback.version>1.2.3</logback.version>
-        <yasson.version>1.0.7</yasson.version>
-        <jakarta.json.version>1.1.6</jakarta.json.version>
-        <smack.version>4.3.4</smack.version>
-        <flyway.version>6.5.3</flyway.version>
-        <mysql.connector.version>8.0.21</mysql.connector.version>
-        <hikari.version>3.4.3</hikari.version>
-        <testng.version>7.3.0</testng.version>
-        <mockito.version>3.4.6</mockito.version>
-        <h2.version>1.4.200</h2.version>
+        <logback.version>1.4.11</logback.version>
+        <yasson.version>3.0.3</yasson.version>
+        <jakarta.json.version>2.1.2</jakarta.json.version>
+        <smack.version>4.4.6</smack.version>
+        <mysql.connector.version>8.0.33</mysql.connector.version>
+        <hikari.version>5.0.1</hikari.version>
+        <testng.version>7.8.0</testng.version>
+        <mockito.version>5.5.0</mockito.version>
+        <h2.version>2.2.222</h2.version>
         <jsr305.version>3.0.2</jsr305.version>
-        <apache.text.version>1.9</apache.text.version>
-        <apache.httpclient.version>5.0.1</apache.httpclient.version>
+        <apache.text.version>1.10.0</apache.text.version>
+        <apache.httpclient.version>5.2.1</apache.httpclient.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
-        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
-        <maven.pmd.plugin.version>3.13.0</maven.pmd.plugin.version>
-        <maven.spotbugs.plugin.version>4.0.4</maven.spotbugs.plugin.version>
-        <maven.enforcer.plugin.version>3.0.0-M3</maven.enforcer.plugin.version>
+        <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
+        <maven.pmd.plugin.version>3.21.0</maven.pmd.plugin.version>
+        <maven.spotbugs.plugin.version>4.7.3.5</maven.spotbugs.plugin.version>
+        <maven.enforcer.plugin.version>3.3.0</maven.enforcer.plugin.version>
         <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
         <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
         <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
@@ -48,7 +47,7 @@
         <maven.owasp.plugin.version>5.3.2</maven.owasp.plugin.version>
         <maven.versions.plugin.version>2.7</maven.versions.plugin.version>
 
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -129,13 +128,8 @@
             </dependency>
             <dependency>
                 <groupId>org.igniterealtime.smack</groupId>
-                <artifactId>smack-java7</artifactId>
+                <artifactId>smack-java8</artifactId>
                 <version>${smack.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${flyway.version}</version>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>
@@ -146,6 +140,12 @@
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
                 <version>${hikari.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -156,6 +156,12 @@
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
                 <version>${apache.httpclient.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
@@ -257,10 +263,14 @@
                         <configuration>
                             <rules>
                                 <banDuplicatePomDependencyVersions/>
-                                <dependencyConvergence/>
+                                <dependencyConvergence>
+                                    <excludedScopes>
+                                        <scope>test</scope>
+                                    </excludedScopes>
+                                </dependencyConvergence>
                                 <requireUpperBoundDeps/>
                                 <requireMavenVersion>
-                                    <version>3.6.3</version>
+                                    <version>3.8.1</version>
                                 </requireMavenVersion>
                             </rules>
                             <fail>true</fail>
@@ -317,11 +327,6 @@
                             </manifest>
                         </archive>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${maven.dependency.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

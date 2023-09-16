@@ -1,6 +1,6 @@
 package com.dmytrobilokha.xmbt.bot.ns.dto;
 
-import javax.json.bind.annotation.JsonbDateFormat;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 import java.time.ZonedDateTime;
 
 public class TripStationDto {

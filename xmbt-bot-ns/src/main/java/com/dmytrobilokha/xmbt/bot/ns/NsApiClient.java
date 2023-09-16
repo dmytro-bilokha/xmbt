@@ -9,6 +9,9 @@ import com.dmytrobilokha.xmbt.bot.ns.dto.TripInfoDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripLegDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripStationDto;
 import com.dmytrobilokha.xmbt.bot.ns.dto.TripsPayloadDto;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ParseException;
@@ -20,9 +23,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.json.bind.JsonbException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -44,6 +44,7 @@ class NsApiClient {
 
     private static final String STATIONS_ENDPOINT = "/reisinformatie-api/api/v2/stations";
     private static final String TRIPS_ENDPOINT = "/reisinformatie-api/api/v3/trips";
+    private static final int MAX_API_RESPONSE_LENGTH = 500_000;
     private static final Logger LOG = LoggerFactory.getLogger(NsApiClient.class);
 
     @Nonnull
@@ -203,7 +204,8 @@ class NsApiClient {
             LOG.debug("Converted response to JSON: '{}'", convertedResponse);
             return convertedResponse;
         } catch (JsonbException ex) {
-            throw new NsApiException("Failed to convert response to JSON object", ex);
+            throw new NsApiException("Failed to convert response to JSON object. Response: "
+                    + responseString, ex);
         }
     }
 
@@ -216,13 +218,23 @@ class NsApiClient {
                         + "' from the API url: '" + httpGet.getRequestUri()
                         + "'. Response reason: '" + response.getReasonPhrase() + "'");
             }
-            var responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8, 50000);
-            if (responseString == null || responseString.isBlank()) {
-                throw new NsApiException("Got no text in the response from the API url: '" + httpGet.getRequestUri());
-            }
+            var responseString = EntityUtils.toString(
+                    response.getEntity(), StandardCharsets.UTF_8, MAX_API_RESPONSE_LENGTH);
+            validateResponseString(responseString, httpGet);
             return responseString;
         } catch (ParseException | IOException ex) {
-            throw new NsApiException("Unable to fetch the response from the API url: '" + httpGet.getRequestUri(), ex);
+            throw new NsApiException("Unable to fetch the response from the API url: " + httpGet.getRequestUri(), ex);
+        }
+    }
+
+    private void validateResponseString(
+            @CheckForNull String responseString, @Nonnull HttpGet httpGet) throws NsApiException {
+        if (responseString == null || responseString.isBlank()) {
+            throw new NsApiException("Got no text in the response from the API url: " + httpGet.getRequestUri());
+        }
+        if (responseString.length() == MAX_API_RESPONSE_LENGTH) {
+            throw new NsApiException("API response exceeded maximum allowed length " + MAX_API_RESPONSE_LENGTH
+                    + ". Response: " + responseString);
         }
     }
 

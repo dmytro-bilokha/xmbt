@@ -59,8 +59,7 @@ public class SubscribeCommand implements Command {
 
     @Override
     public void acceptRequest(@Nonnull RequestMessage requestMessage) throws InterruptedException {
-        var commandMessageScanner = new Scanner(requestMessage.getTextMessage().getText());
-        try {
+        try (var commandMessageScanner = new Scanner(requestMessage.getTextMessage().getText())) {
             validateCommandName(commandMessageScanner);
             if (!commandMessageScanner.hasNext()) {
                 sendHelpResponse(requestMessage);

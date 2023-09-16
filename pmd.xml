@@ -167,8 +167,6 @@
     <rule ref="category/java/design.xml/ExcessivePublicCount" />
     <!-- Make final fields static when possible -->
     <rule ref="category/java/design.xml/FinalFieldCouldBeStatic" />
-    <!-- No GOD objects -->
-    <rule ref="category/java/design.xml/GodClass" />
     <!-- Prefer final fields if possible -->
     <rule ref="category/java/design.xml/ImmutableField" />
     <!-- Avoid logical operators negation when possible -->

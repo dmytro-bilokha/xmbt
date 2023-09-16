@@ -9,11 +9,10 @@ module xmbt.main {
     exports com.dmytrobilokha.xmbt.api.service.config;
     exports com.dmytrobilokha.xmbt.api.service.persistence;
     requires transitive java.sql;
-    requires transitive slf4j.api;
-    requires logback.core;
-    requires logback.classic;
+    requires transitive org.slf4j;
+    requires ch.qos.logback.classic;
+    requires ch.qos.logback.core;
     requires com.zaxxer.hikari;
-    requires org.flywaydb.core;
     requires smack.core;
     requires smack.tcp;
     requires smack.im;

@@ -8,8 +8,6 @@ import com.dmytrobilokha.xmbt.boot.Initializable;
 import com.dmytrobilokha.xmbt.config.ConfigServiceImpl;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +41,6 @@ public class PersistenceServiceImpl implements Initializable, PersistenceService
         dbPoolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         dbPoolConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         dataSource  = new HikariDataSource(dbPoolConfig);
-        LOG.info("Initializing flyway DB migration");
-        var flywayConfig = new FluentConfiguration()
-                .dataSource(dataSource)
-                .baselineVersion("0.0.0")
-                .baselineOnMigrate(true)
-                .locations("classpath:db-script");
-        Flyway flyway = new Flyway(flywayConfig);
-        flyway.migrate();
     }
 
     @Override

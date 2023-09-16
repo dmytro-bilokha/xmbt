@@ -1,7 +1,8 @@
 package com.dmytrobilokha.xmbt.bot.weather.dto;
 
+import jakarta.json.bind.annotation.JsonbProperty;
+
 import javax.annotation.CheckForNull;
-import javax.json.bind.annotation.JsonbProperty;
 import java.util.List;
 
 public class WeerliveResponse {

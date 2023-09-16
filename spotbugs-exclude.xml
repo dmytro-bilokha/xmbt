@@ -12,4 +12,9 @@
         <!-- Spotbugs sees redundant nullchecks in try-with-resources blocks using var keyword -->
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE" />
     </Match>
+        <Match>
+        <!-- SpotBugs complains on dependency injected mutable objects in final fields or object with only getters
+                returning mutable value -->
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
 </FindBugsFilter>
