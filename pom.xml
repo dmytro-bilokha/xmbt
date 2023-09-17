@@ -110,6 +110,7 @@
                 <groupId>jakarta.json</groupId>
                 <artifactId>jakarta.json-api</artifactId>
                 <version>${jakarta.json.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.igniterealtime.smack</groupId>

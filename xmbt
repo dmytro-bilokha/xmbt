@@ -52,7 +52,7 @@ xmbt_superviser_pid_file="/var/run/xmbt_superviser.pid"
 if [ ! -z ${xmbt_java_home} ] ; then
   export JAVA_HOME=${xmbt_java_home}
 else
-  export JAVA_HOME=/usr/local/openjdk11
+  export JAVA_HOME=/usr/local/openjdk17
 fi
 
 export PATH=${JAVA_HOME}/bin:${PATH}
@@ -70,7 +70,7 @@ extra_commands="status"
 xmbt_start() {
     daemon -o "${xmbt_log_dir}/xmbt.out" -p "${xmbt_pid_file}" -P "${xmbt_superviser_pid_file}" -u "${xmbt_user}"\
         java ${xmbt_java_opts} -Dconfig.file="${xmbt_config_file}" -Dlog.file="${xmbt_log_file}" -Dlog.level="${xmbt_log_level}"\
-        --module-path /usr/local/xmbt/modules --class-path /usr/local/xmbt/class-path/xpp3-1.1.4c.jar -m xmbt.main/com.dmytrobilokha.xmbt.boot.Loader
+        --module-path /usr/local/xmbt/modules -m xmbt.main/com.dmytrobilokha.xmbt.boot.Loader
     return $?
 }
 
