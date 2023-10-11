@@ -101,29 +101,18 @@ public class XmppConnector {
         if (connection == null) {
             connect();
         } else if (!connection.isConnected()) {
-            int pause = configService.getProperty(XmppReconnectPauseSeedProperty.class).getValue();
-            int maxTries = configService.getProperty(XmppReconnectTrialsProperty.class).getValue();
-            int totalWaitTime = 0;
-            int trial;
-            for (trial = 1; trial <= maxTries && !connection.isConnected(); trial++) {
-                Thread.sleep(pause * 1000);
-                totalWaitTime += pause;
-                pause *= 1.5; //Increase pause exponentially
-                LOG.info("Trying to reconnect to the XMPP server. Try number {}", trial);
-                try {
-                    connection.connect().login();
-                } catch (XMPPException | SmackException | IOException ex) {
-                    LOG.warn("Reconnection try {} failed", trial, ex);
-                }
+            LOG.info("Trying to reconnect to the XMPP server.");
+            try {
+                connection.connect().login();
+            } catch (XMPPException | SmackException | IOException ex) {
+                LOG.warn("Reconnection try failed", ex);
             }
-            if (connection.isConnected()) {
-                LOG.info("Reconnection try {} seems to be successful. Total wait time is {} seconds"
-                        , trial, totalWaitTime);
-                return;
-            }
-            throw new ConnectionException("Failed to reconnect to the XMPP server after " + trial
-                    + " tries and total waiting time of " + totalWaitTime + " seconds");
         }
+        if (connection.isConnected()) {
+            LOG.info("Reconnection try seems to be successful.");
+            return;
+        }
+        throw new ConnectionException("Failed to reconnect to the XMPP server");
     }
 
 }
