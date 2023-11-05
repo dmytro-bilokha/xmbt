@@ -28,14 +28,18 @@ public class Cleaner extends Thread {
 
     public void registerThread(@Nonnull Thread thread) {
         threadsToBeInterrupted.add(thread);
-        LOG.debug("Registered {} to be interrupted on exit", thread);
+        LOG.info("Registered {} to be interrupted on exit", thread);
     }
 
     @Override
     public void run() {
+        onShutdown();
+    }
+
+    public void onShutdown() {
         hooksToExecute.forEach(Runnable::run);
         threadsToBeInterrupted.forEach(Thread::interrupt);
-        LOG.debug("Interrupt signal has been sent to {}", threadsToBeInterrupted);
+        LOG.info("Interrupt signal has been sent to {}", threadsToBeInterrupted);
     }
 
 }

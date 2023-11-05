@@ -29,6 +29,9 @@
 # xmbt_log_dir (string):
 #   Location of the logs directory (optional).
 #
+# xmbt_retry_sec (integer):
+#   Delay in seconds between xmbt restart on failure (optional).
+#
 
 . /etc/rc.subr
 
@@ -44,6 +47,7 @@ load_rc_config ${name}
 : ${xmbt_log_level="INFO"}
 : ${xmbt_config_file="/usr/local/etc/xmbt.conf"}
 : ${xmbt_log_dir="/var/log/xmbt"}
+: ${xmbt_retry_sec="5"}
 
 xmbt_log_file="${xmbt_log_dir}/xmbt.log"
 xmbt_pid_file="/var/run/xmbt.pid"
@@ -68,7 +72,7 @@ status_cmd="${name}_status"
 extra_commands="status"
 
 xmbt_start() {
-    daemon -o "${xmbt_log_dir}/xmbt.out" -p "${xmbt_pid_file}" -P "${xmbt_superviser_pid_file}" -u "${xmbt_user}"\
+    daemon -o "${xmbt_log_dir}/xmbt.out" -p "${xmbt_pid_file}" -P "${xmbt_superviser_pid_file}" -u "${xmbt_user}" -R "${xmbt_retry_sec}" \
         java ${xmbt_java_opts} -Dconfig.file="${xmbt_config_file}" -Dlog.file="${xmbt_log_file}" -Dlog.level="${xmbt_log_level}"\
         --module-path /usr/local/xmbt/modules -m xmbt.main/com.dmytrobilokha.xmbt.boot.Loader
     return $?

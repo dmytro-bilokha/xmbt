@@ -32,6 +32,7 @@ public final class Loader {
 
     @Nonnull
     private final BeanRegistry beanRegistry;
+    private Cleaner cleaner;
 
     private Loader() {
         beanRegistry = new BeanRegistry();
@@ -47,8 +48,8 @@ public final class Loader {
         System.out.print(LocalDateTime.now() + ": Initializing...");
         try {
             beanRegistry.initServices(SERVICE_CLASSES);
-            addShutdownHook(beanRegistry.getServiceBean(Cleaner.class));
-            var cleaner = beanRegistry.getServiceBean(Cleaner.class);
+            cleaner = beanRegistry.getServiceBean(Cleaner.class);
+            addShutdownHook(cleaner);
             cleaner.registerThread(Thread.currentThread());
             System.out.println("OK");
         } catch (InitializationException | RuntimeException ex) {
@@ -77,6 +78,8 @@ public final class Loader {
             beanRegistry.getServiceBean(BotManager.class).go(botFactories);
         } catch (InitializationException | RuntimeException ex) {
             LOG.error("Got unexpected exception, shutting down", ex);
+        } finally {
+            cleaner.onShutdown();
         }
     }
 

@@ -32,12 +32,15 @@ public class XmppConnector {
     private final ConfigServiceImpl configService;
     @Nonnull
     private final BotRegistry botRegistry;
+    @Nonnull
+    private final XmppConnectionListener connectionListener;
     @CheckForNull
     private AbstractXMPPConnection connection;
 
     public XmppConnector(@Nonnull ConfigServiceImpl configService, @Nonnull BotRegistry botRegistry) {
         this.configService = configService;
         this.botRegistry = botRegistry;
+        this.connectionListener = new XmppConnectionListener();
     }
 
     public void connect() throws ConnectionException, InterruptedException {
@@ -70,6 +73,7 @@ public class XmppConnector {
                     "Unable to connect to XMPP server '" + server + "' with username '" + username + "'", ex);
         }
         connection.addAsyncStanzaListener(new AsyncStanzaListener(botRegistry), StanzaTypeFilter.MESSAGE);
+        connection.addConnectionListener(connectionListener);
     }
 
     public void sendMessage(@Nonnull TextMessage message)
@@ -98,6 +102,10 @@ public class XmppConnector {
     }
 
     public void ensureConnected() throws ConnectionException, InterruptedException {
+        var connectionException = connectionListener.getConnectionException();
+        if (connectionException != null) {
+            throw new ConnectionException("XMPP connection died with exception", connectionException);
+        }
         if (connection == null) {
             connect();
         } else if (!connection.isConnected()) {
@@ -109,7 +117,6 @@ public class XmppConnector {
             }
         }
         if (connection.isConnected()) {
-            LOG.info("Reconnection try seems to be successful.");
             return;
         }
         throw new ConnectionException("Failed to reconnect to the XMPP server");
