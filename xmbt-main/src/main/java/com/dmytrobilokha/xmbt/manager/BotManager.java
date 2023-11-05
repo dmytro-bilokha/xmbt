@@ -157,8 +157,19 @@ public class BotManager {
         if (!botRegistry.enqueueRequestMessage(requestMessage)) {
             botRegistry.enqueueResponseMessage(
                     new ResponseMessage(requestMessage, Response.INVALID_RECEIVER
-                            , "Don't have any bot with name '" + botName + "'"));
+                            , "Don't have any bot with name '" + botName + "'. "
+                            + getBotsListString() + "."));
         }
+    }
+
+    @Nonnull
+    private String getBotsListString() {
+        return "Available bots are: "
+                + botRegistry.getBotNames()
+                    .stream()
+                    .sorted()
+                    .map(name -> BOT_NAME_PREFIX + name)
+                    .collect(Collectors.joining(","));
     }
 
     private void executeCommandFromMessage(@Nonnull TextMessage message) throws InterruptedException {
@@ -174,10 +185,20 @@ public class BotManager {
         if (command == null) {
             botRegistry.enqueueResponseMessage(
                     new ResponseMessage(requestMessage, Response.INVALID_RECEIVER
-                            , "Don't recognize command '" + commandName + "'"));
+                            , "Don't recognize command '" + commandName + "'. "
+                            + getCommandsListString() + "."));
             return;
         }
         command.acceptRequest(requestMessage);
+    }
+
+    @Nonnull
+    private String getCommandsListString() {
+        return "Available commands are: "
+                + commandMap.keySet()
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.joining(","));
     }
 
 }
