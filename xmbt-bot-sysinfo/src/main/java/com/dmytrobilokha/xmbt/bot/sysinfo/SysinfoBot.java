@@ -72,6 +72,8 @@ class SysinfoBot implements Runnable {
                 .append(NEW_LINE)
                 .append("Uptime: ").append(getUptimeString())
                 .append(NEW_LINE)
+                .append("Current datetime: ").append(LocalDateTime.now())
+                .append(NEW_LINE)
                 .append("Runtime version: ").append(Runtime.version())
                 .append(NEW_LINE)
                 .append("Available processors/cores: ").append(runtime.availableProcessors())
