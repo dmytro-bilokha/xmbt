@@ -48,8 +48,9 @@ public class WebGatewayBotFactory implements BotFactory {
                 , readResource("FormPageTemplate.html")
                 , readResource("ErrorPageTemplate.html")
         ));
+        var webGatewayDao = new WebGatewayDao(serviceContainer.getPersistenceService());
         try {
-            return new WebGatewayBot(pathKeyMap, connector, webServer, configService);
+            return new WebGatewayBot(pathKeyMap, connector, webServer, configService, webGatewayDao);
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("Failed to initialize bot, because there are no suitable random"
                     + " number generating algorithms", ex);

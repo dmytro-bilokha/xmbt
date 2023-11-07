@@ -44,19 +44,11 @@ class WebRequestHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         switch (exchange.getRequestMethod()) {
-            case "GET":
-                doGet(exchange);
-                break;
-
-            case "POST":
-                doPost(exchange);
-                break;
-
-            default:
-                sendError(HttpURLConnection.HTTP_BAD_METHOD
-                        , "Don't know how to handle method '" + exchange.getRequestMethod() + '\''
-                        , exchange);
-                break;
+            case "GET" -> doGet(exchange);
+            case "POST" -> doPost(exchange);
+            default -> sendError(HttpURLConnection.HTTP_BAD_METHOD
+                    , "Don't know how to handle method '" + exchange.getRequestMethod() + '\''
+                    , exchange);
         }
     }
 

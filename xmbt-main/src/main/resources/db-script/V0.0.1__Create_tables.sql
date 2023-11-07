@@ -18,3 +18,8 @@ CREATE TABLE ns_train_station
 , CONSTRAINT ns_train_station_pk PRIMARY KEY (eva_code, code)
 );
 
+CREATE TABLE web_gateway
+( user_address VARCHAR(120) NOT NULL
+, path_id BIGINT NOT NULL
+, CONSTRAINT web_gateway_pk PRIMARY KEY (path_id)
+);
