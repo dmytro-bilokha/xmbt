@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -140,8 +141,9 @@ class NsApiClient {
         }
         var tripLegs = new ArrayList<TripLeg>();
         for (TripLegDto dto : legDtos) {
-            var origin = mapTripStation(dto.getOrigin());
-            var destination = mapTripStation(dto.getDestination());
+            boolean canceled = Boolean.TRUE.equals(dto.getCanceled()) || Boolean.TRUE.equals(dto.getPartCanceled());
+            var origin = mapTripStation(dto.getOrigin(), canceled);
+            var destination = mapTripStation(dto.getDestination(), false);
             if (origin == null || destination == null) {
                 LOG.error("Got invalid trip leg: {}", dto);
                 return null;
@@ -152,7 +154,7 @@ class NsApiClient {
     }
 
     @CheckForNull
-    private TripStation mapTripStation(@CheckForNull TripStationDto dto) {
+    private TripStation mapTripStation(@CheckForNull TripStationDto dto, boolean indicateDoubt) {
         if (dto == null) {
             return null;
         }
@@ -161,7 +163,11 @@ class NsApiClient {
             return null;
         }
         var name = dto.getName() == null ? "?" : dto.getName();
-        var track = dto.getPlannedTrack() == null ? "?" : dto.getPlannedTrack();
+        var track = Objects.requireNonNullElse(dto.getActualTrack(),
+                Objects.requireNonNullElse(dto.getPlannedTrack(), "?"));
+        if (indicateDoubt) {
+            track = "?" + track + "?";
+        }
         // If we are interested in the NS API, probably, we are in the Amsterdam timezone
         var localDateTime = zonedDateTime.withZoneSameInstant(DEFAULT_TIMEZONE_ID).toLocalDateTime();
         return new TripStation(name, track, localDateTime);

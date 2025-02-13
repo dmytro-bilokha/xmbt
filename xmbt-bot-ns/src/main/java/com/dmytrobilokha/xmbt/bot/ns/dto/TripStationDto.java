@@ -10,6 +10,7 @@ public class TripStationDto {
     @JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ssx")
     private ZonedDateTime actualDateTime;
     private String plannedTrack;
+    private String actualTrack;
     private String name;
     private Long uicCode;
 
@@ -37,6 +38,14 @@ public class TripStationDto {
         this.plannedTrack = plannedTrack;
     }
 
+    public String getActualTrack() {
+        return actualTrack;
+    }
+
+    public void setActualTrack(String actualTrack) {
+        this.actualTrack = actualTrack;
+    }
+
     public String getName() {
         return name;
     }
@@ -55,12 +64,13 @@ public class TripStationDto {
 
     @Override
     public String toString() {
-        return "TripStationDto{"
-                + "plannedDateTime=" + plannedDateTime
-                + ", actualDateTime=" + actualDateTime
-                + ", plannedTrack='" + plannedTrack + '\''
-                + ", name='" + name + '\''
-                + ", uicCode=" + uicCode
-                + '}';
+        return "TripStationDto{" +
+                "plannedDateTime=" + plannedDateTime +
+                ", actualDateTime=" + actualDateTime +
+                ", plannedTrack='" + plannedTrack + '\'' +
+                ", actualTrack='" + actualTrack + '\'' +
+                ", name='" + name + '\'' +
+                ", uicCode=" + uicCode +
+                '}';
     }
 }

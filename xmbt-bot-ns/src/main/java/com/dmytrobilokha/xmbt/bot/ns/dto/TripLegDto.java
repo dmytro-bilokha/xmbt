@@ -11,6 +11,10 @@ public class TripLegDto {
     @CheckForNull
     private String direction;
     @CheckForNull
+    private Boolean partCanceled;
+    @CheckForNull
+    private Boolean canceled;
+    @CheckForNull
     private TripStationDto origin;
     @CheckForNull
     private TripStationDto destination;
@@ -39,6 +43,22 @@ public class TripLegDto {
         this.direction = direction;
     }
 
+    public Boolean getPartCanceled() {
+        return partCanceled;
+    }
+
+    public void setPartCanceled(Boolean partCanceled) {
+        this.partCanceled = partCanceled;
+    }
+
+    public Boolean getCanceled() {
+        return canceled;
+    }
+
+    public void setCanceled(Boolean canceled) {
+        this.canceled = canceled;
+    }
+
     public TripStationDto getOrigin() {
         return origin;
     }
@@ -57,13 +77,14 @@ public class TripLegDto {
 
     @Override
     public String toString() {
-        return "TripLegDto{"
-                + "idx=" + idx
-                + ", name='" + name + '\''
-                + ", direction='" + direction + '\''
-                + ", origin=" + origin
-                + ", destination=" + destination
-                + '}';
+        return "TripLegDto{" +
+                "idx=" + idx +
+                ", name='" + name + '\'' +
+                ", direction='" + direction + '\'' +
+                ", partCanceled=" + partCanceled +
+                ", canceled=" + canceled +
+                ", origin=" + origin +
+                ", destination=" + destination +
+                '}';
     }
-
 }
