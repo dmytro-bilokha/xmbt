@@ -11,6 +11,7 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 class WebRequestHandler implements HttpHandler {
+
+    private static final int REQUEST_MAX_BYTES = 16384;
 
     @Nonnull
     private final MessageBus messageBus;
@@ -69,7 +72,10 @@ class WebRequestHandler implements HttpHandler {
             sendError(HttpURLConnection.HTTP_NOT_FOUND, "Unknown key: '" + key + '\'', exchange);
             return;
         }
-        String payload = new String(exchange.getRequestBody().readNBytes(1024), StandardCharsets.UTF_8);
+        String payload;
+        try (InputStream requestBodyStream = exchange.getRequestBody()) {
+            payload = new String(requestBodyStream.readNBytes(REQUEST_MAX_BYTES), StandardCharsets.UTF_8);
+        }
         if (!payload.startsWith("content=")) {
             sendError(
                     HttpURLConnection.HTTP_BAD_REQUEST, "Couldn't extract message content from the request", exchange);
