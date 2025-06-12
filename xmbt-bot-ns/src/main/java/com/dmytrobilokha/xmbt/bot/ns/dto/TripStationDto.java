@@ -64,13 +64,13 @@ public class TripStationDto {
 
     @Override
     public String toString() {
-        return "TripStationDto{" +
-                "plannedDateTime=" + plannedDateTime +
-                ", actualDateTime=" + actualDateTime +
-                ", plannedTrack='" + plannedTrack + '\'' +
-                ", actualTrack='" + actualTrack + '\'' +
-                ", name='" + name + '\'' +
-                ", uicCode=" + uicCode +
-                '}';
+        return "TripStationDto{"
+                + "plannedDateTime=" + plannedDateTime
+                + ", actualDateTime=" + actualDateTime
+                + ", plannedTrack='" + plannedTrack + '\''
+                + ", actualTrack='" + actualTrack + '\''
+                + ", name='" + name + '\''
+                + ", uicCode=" + uicCode
+                + '}';
     }
 }

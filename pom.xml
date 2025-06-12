@@ -32,7 +32,7 @@
         <h2.version>2.3.232</h2.version>
         <jsr305.version>3.0.2</jsr305.version>
         <apache.text.version>1.13.0</apache.text.version>
-        <apache.httpclient.version>5.4.2</apache.httpclient.version>
+        <apache.httpclient.version>5.5</apache.httpclient.version>
 
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>

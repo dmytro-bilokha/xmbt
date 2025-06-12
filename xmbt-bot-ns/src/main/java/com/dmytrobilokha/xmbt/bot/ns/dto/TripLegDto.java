@@ -77,14 +77,14 @@ public class TripLegDto {
 
     @Override
     public String toString() {
-        return "TripLegDto{" +
-                "idx=" + idx +
-                ", name='" + name + '\'' +
-                ", direction='" + direction + '\'' +
-                ", partCanceled=" + partCanceled +
-                ", canceled=" + canceled +
-                ", origin=" + origin +
-                ", destination=" + destination +
-                '}';
+        return "TripLegDto{"
+                + "idx=" + idx
+                + ", name='" + name + '\''
+                + ", direction='" + direction + '\''
+                + ", partCanceled=" + partCanceled
+                + ", canceled=" + canceled
+                + ", origin=" + origin
+                + ", destination=" + destination
+                + '}';
     }
 }
