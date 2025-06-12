@@ -204,7 +204,7 @@ class NsApiClient {
             throw new NsApiException("Failed to close http client after querying the API endpoint '"
                     + fullEndpointUrl + "'", ex);
         }
-        LOG.debug("Got response from the endpoint: '{}'", responseString);
+        LOG.info("From NS API endpoint '{}' got response: '{}'", fullEndpointUrl, responseString);
         try {
             T convertedResponse = jsonb.fromJson(responseString, responseClass);
             LOG.debug("Converted response to JSON: '{}'", convertedResponse);
