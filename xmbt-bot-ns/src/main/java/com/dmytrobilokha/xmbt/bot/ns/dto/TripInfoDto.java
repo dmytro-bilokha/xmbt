@@ -6,6 +6,7 @@ public class TripInfoDto {
 
     private boolean optimal;
     private Integer transfers;
+    private String status;
     private List<TripLegDto> legs;
 
     public boolean isOptimal() {
@@ -28,6 +29,14 @@ public class TripInfoDto {
         return legs;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public void setLegs(List<TripLegDto> legs) {
         this.legs = legs;
     }
@@ -37,6 +46,7 @@ public class TripInfoDto {
         return "TripInfoDto{"
                 + "optimal=" + optimal
                 + ", transfers=" + transfers
+                + ", status=" + status
                 + ", legs=" + legs
                 + '}';
     }

@@ -133,6 +133,10 @@ class NsApiClient {
 
     @CheckForNull
     private List<TripLeg> mapTripInfo(@Nonnull TripInfoDto tripInfo) {
+        if ("CANCELLED".equalsIgnoreCase(tripInfo.getStatus())) {
+            LOG.info("Skipping canceled trip plan: {}", tripInfo);
+            return null;
+        }
         var legDtos = tripInfo.getLegs();
         if (legDtos == null || legDtos.isEmpty()) {
             LOG.error("Got invalid trip info response with no legs: {}", tripInfo);
